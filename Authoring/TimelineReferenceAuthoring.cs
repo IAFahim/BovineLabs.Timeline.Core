@@ -12,7 +12,7 @@ namespace BovineLabs.Timeline.Core.Authoring
     [DisallowMultipleComponent]
     public class TimelineReferenceAuthoring : MonoBehaviour
     {
-        private class Baker : Baker<TimelineReferenceAuthoring>
+        private class TimelineReferenceBaker : Baker<TimelineReferenceAuthoring>
         {
             public override void Bake(TimelineReferenceAuthoring authoring)
             {
