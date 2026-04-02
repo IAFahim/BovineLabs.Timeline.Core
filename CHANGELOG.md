@@ -8,4 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Initial release of `com.bovinelabs.timeline.core`.
 - Base ASMDEFs for Runtime, Authoring, and Editor.
-- Package scaffolding.
+- `Float4x4Ext.ExtractLocalTransform()` - extracts LocalTransform from float4x4 matrix.
+- `TimelineReference` component - tag component for timeline-driven entities.
+- `StartUI` MonoBehaviour - activates all Timeline-referenced entities on first Update.
+- `TimelineReferenceAuthoring` - authoring component for TimelineReference.
