@@ -2,15 +2,15 @@
   "name": "BovineLabs.Timeline.Core.Authoring",
   "rootNamespace": "BovineLabs.Timeline.Core.Authoring",
   "references": [
-    "BovineLabs.Timeline.Core",
-    "BovineLabs.Core.Authoring",
-    "BovineLabs.Timeline.Authoring",
+    "Unity.Burst",
+    "Unity.Collections",
     "Unity.Entities",
     "Unity.Entities.Hybrid",
-    "Unity.Collections",
     "Unity.Mathematics",
-    "Unity.Burst",
-    "Unity.Timeline"
+    "Unity.Timeline",
+    "BovineLabs.Core.Authoring",
+    "BovineLabs.Timeline.Authoring",
+    "BovineLabs.Timeline.Core"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
