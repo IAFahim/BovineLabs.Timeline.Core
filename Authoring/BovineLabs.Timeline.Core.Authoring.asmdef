@@ -6,6 +6,7 @@
     "BovineLabs.Core.Authoring",
     "BovineLabs.Timeline.Authoring",
     "Unity.Entities",
+    "Unity.Entities.Hybrid",
     "Unity.Collections",
     "Unity.Mathematics",
     "Unity.Burst",
