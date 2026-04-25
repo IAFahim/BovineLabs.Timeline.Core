@@ -29,8 +29,10 @@ namespace BovineLabs.Timeline.Core
                     .Build(em);
             }
 
-            foreach (var e in timelineQuery.ToEntityArray(Allocator.Temp))
-                em.SetComponentEnabled<TimelineActive>(e, true);
+            var entities = timelineQuery.ToEntityArray(Allocator.Temp);
+            for (int i = 0; i < entities.Length; i++)
+                em.SetComponentEnabled<TimelineActive>(entities[i], true);
+            entities.Dispose();
 
             if (!timelineQuery.IsEmpty) enabled = false;
         }
