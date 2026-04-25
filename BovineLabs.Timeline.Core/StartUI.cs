@@ -5,34 +5,34 @@ using UnityEngine;
 
 namespace BovineLabs.Timeline.Core
 {
-    /// <summary>
-    ///     Simple MonoBehaviour helper that activates all Timeline-referenced entities
-    ///     on the first Update. Disables itself once triggered.
-    /// </summary>
     public class StartUI : MonoBehaviour
     {
+        private EntityQuery timelineQuery;
+
         private void Update()
         {
             TriggerTimeline();
         }
 
-        public void TriggerTimeline()
+        private void TriggerTimeline()
         {
             if (World.DefaultGameObjectInjectionWorld == null)
                 return;
 
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
-            using var query = new EntityQueryBuilder(Allocator.Temp)
-                .WithAll<TimelineReference>()
-                .WithPresent<TimelineActive>()
-                .Build(em);
+            if (timelineQuery == default)
+            {
+                timelineQuery = new EntityQueryBuilder(Allocator.Temp)
+                    .WithAll<TimelineReference>()
+                    .WithDisabled<TimelineActive>()
+                    .Build(em);
+            }
 
-            foreach (var e in query.ToEntityArray(Allocator.Temp))
+            foreach (var e in timelineQuery.ToEntityArray(Allocator.Temp))
                 em.SetComponentEnabled<TimelineActive>(e, true);
 
-            if (!query.IsEmpty)
-                enabled = false;
+            if (!timelineQuery.IsEmpty) enabled = false;
         }
     }
 }
