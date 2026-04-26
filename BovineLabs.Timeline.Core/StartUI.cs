@@ -22,15 +22,13 @@ namespace BovineLabs.Timeline.Core
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
             if (timelineQuery == default)
-            {
                 timelineQuery = new EntityQueryBuilder(Allocator.Temp)
                     .WithAll<TimelineReference>()
                     .WithDisabled<TimelineActive>()
                     .Build(em);
-            }
 
             var entities = timelineQuery.ToEntityArray(Allocator.Temp);
-            for (int i = 0; i < entities.Length; i++)
+            for (var i = 0; i < entities.Length; i++)
                 em.SetComponentEnabled<TimelineActive>(entities[i], true);
             entities.Dispose();
 
