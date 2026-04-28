@@ -8,6 +8,7 @@ namespace BovineLabs.Timeline.Core
     public class StartUI : MonoBehaviour
     {
         private EntityQuery timelineQuery;
+        private World timelineQueryWorld;
 
         private void Update()
         {
@@ -16,23 +17,40 @@ namespace BovineLabs.Timeline.Core
 
         private void TriggerTimeline()
         {
-            if (World.DefaultGameObjectInjectionWorld == null)
-                return;
+            if (!TryGetTimelineQuery(out var query)) return;
+            var em = timelineQueryWorld.EntityManager;
 
-            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
-
-            if (timelineQuery == default)
-                timelineQuery = new EntityQueryBuilder(Allocator.Temp)
-                    .WithAll<TimelineReference>()
-                    .WithDisabled<TimelineActive>()
-                    .Build(em);
-
-            var entities = timelineQuery.ToEntityArray(Allocator.Temp);
+            var entities = query.ToEntityArray(Allocator.Temp);
             for (var i = 0; i < entities.Length; i++)
                 em.SetComponentEnabled<TimelineActive>(entities[i], true);
             entities.Dispose();
 
-            if (!timelineQuery.IsEmpty) enabled = false;
+            if (!query.IsEmpty) enabled = false;
+        }
+
+        private bool TryGetTimelineQuery(out EntityQuery query)
+        {
+            var world = World.DefaultGameObjectInjectionWorld;
+            if (world == null)
+            {
+                query = default;
+                return false;
+            }
+
+            if (timelineQuery != default && timelineQueryWorld == world)
+            {
+                query = timelineQuery;
+                return true;
+            }
+
+            timelineQueryWorld = world;
+            timelineQuery = new EntityQueryBuilder(Allocator.Temp)
+                .WithAll<TimelineReference>()
+                .WithDisabled<TimelineActive>()
+                .Build(world.EntityManager);
+
+            query = timelineQuery;
+            return true;
         }
     }
 }
