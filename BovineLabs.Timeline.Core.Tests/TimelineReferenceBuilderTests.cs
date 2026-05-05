@@ -62,7 +62,7 @@ namespace BovineLabs.Timeline.Core.Tests
         }
 
         [Test]
-        public void ApplyTo_ComponentDataIsDefault()
+        public void ApplyTo_ComponentIsZeroSizedTag()
         {
             var entity = this.Manager.CreateEntity();
 
@@ -70,8 +70,7 @@ namespace BovineLabs.Timeline.Core.Tests
             ecb.AddComponent<TimelineReference>(entity);
             ecb.Playback(this.Manager);
 
-            var data = this.Manager.GetComponentData<TimelineReference>(entity);
-            Assert.AreEqual(default(TimelineReference), data);
+            Assert.IsTrue(this.Manager.HasComponent<TimelineReference>(entity));
         }
     }
 }

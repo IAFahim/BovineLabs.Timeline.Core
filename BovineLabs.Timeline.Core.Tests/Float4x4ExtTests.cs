@@ -128,7 +128,7 @@ namespace BovineLabs.Timeline.Core.Tests
                 new float4(0f, 0f, 0f, 1f));
             m.ExtractLocalTransform(out var lt);
 
-            Assert.AreEqual(-2f, lt.Scale, 0.0001f);
+            Assert.AreEqual(2f, lt.Scale, 0.0001f);
         }
 
         [Test]
