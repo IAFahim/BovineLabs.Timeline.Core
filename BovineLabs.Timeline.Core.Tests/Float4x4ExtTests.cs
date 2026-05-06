@@ -1,7 +1,5 @@
-using BovineLabs.Timeline.Core;
 using NUnit.Framework;
 using Unity.Mathematics;
-using Unity.Transforms;
 
 namespace BovineLabs.Timeline.Core.Tests
 {
