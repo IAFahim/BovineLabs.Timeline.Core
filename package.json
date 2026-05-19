@@ -20,13 +20,6 @@
     "ecs",
     "physics"
   ],
-  "samples": [
-    {
-      "displayName": "Basic Timeline Setup",
-      "description": "Example scene showing Physics, Transform, and Animation tracks.",
-      "path": "Samples~/BasicSetup"
-    }
-  ],
   "documentationUrl": "Documentation~/com.bovinelabs.timeline.core.md",
   "changelogUrl": "CHANGELOG.md",
   "licensesUrl": "LICENSE.md"
