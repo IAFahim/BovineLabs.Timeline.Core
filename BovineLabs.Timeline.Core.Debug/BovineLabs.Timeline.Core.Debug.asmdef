@@ -1,0 +1,29 @@
+{
+    "name": "BovineLabs.Timeline.Core.Debug",
+    "rootNamespace": "",
+    "references": [
+        "BovineLabs.Core",
+        "BovineLabs.Core.Extensions",
+        "BovineLabs.Core.ConfigVars",
+        "BovineLabs.Timeline.Core",
+        "BovineLabs.Timeline.Core.Data",
+        "BovineLabs.Timeline.Data",
+        "BovineLabs.Quill",
+        "Unity.Burst",
+        "Unity.Collections",
+        "Unity.Entities",
+        "Unity.Mathematics",
+        "Unity.Transforms"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_EDITOR || BL_DEBUG"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

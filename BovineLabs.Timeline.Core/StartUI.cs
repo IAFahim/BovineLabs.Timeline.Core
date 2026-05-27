@@ -20,12 +20,19 @@ namespace BovineLabs.Timeline.Core
             if (!TryGetTimelineQuery(out var query)) return;
             var em = timelineQueryWorld.EntityManager;
 
-            var entities = query.ToEntityArray(Allocator.Temp);
-            for (var i = 0; i < entities.Length; i++)
-                em.SetComponentEnabled<TimelineActive>(entities[i], true);
-            entities.Dispose();
+            try
+            {
+                var entities = query.ToEntityArray(Allocator.Temp);
+                for (var i = 0; i < entities.Length; i++)
+                    em.SetComponentEnabled<TimelineActive>(entities[i], true);
+                entities.Dispose();
 
-            if (!query.IsEmpty) enabled = false;
+                if (!query.IsEmpty) enabled = false;
+            }
+            catch (System.InvalidOperationException)
+            {
+                // Wait for AsyncLoadSceneJob to finish
+            }
         }
 
         private bool TryGetTimelineQuery(out EntityQuery query)
