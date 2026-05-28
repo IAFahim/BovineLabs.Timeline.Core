@@ -29,10 +29,10 @@ namespace BovineLabs.Timeline.Core.Debug
             if (world == null)
                 return false;
 
-#if UNITY_EDITOR
-            if (UnityEditor.EditorApplication.isPlaying)
-                return false; // Do not access default world blindly during play mode!
-#endif
+// #if UNITY_EDITOR
+//             if (UnityEditor.EditorApplication.isPlaying)
+//                 return false; // Do not access default world blindly during play mode!
+// #endif
 
             var em = world.EntityManager;
             try
