@@ -13,12 +13,9 @@ namespace BovineLabs.Timeline.Core
             var scale3 = new float3(math.length(m.c0.xyz), math.length(m.c1.xyz), math.length(m.c2.xyz));
             var scale = scale3.x;
 
-            if (math.lengthsq(scale3) > 1e-12f)
-            {
-                m.c0.xyz /= scale3.x;
-                m.c1.xyz /= scale3.y;
-                m.c2.xyz /= scale3.z;
-            }
+            if (scale3.x > 1e-6f) m.c0.xyz /= scale3.x;
+            if (scale3.y > 1e-6f) m.c1.xyz /= scale3.y;
+            if (scale3.z > 1e-6f) m.c2.xyz /= scale3.z;
 
             localTransform = LocalTransform.FromPositionRotationScale(pos, new quaternion(m), scale);
         }

@@ -17,7 +17,7 @@ namespace BovineLabs.Timeline.Core
 
         private void TriggerTimeline()
         {
-            if (!TryGetTimelineQuery(out var query)) return;
+            if (!TryGetTimelineQuery(out var query) || query.IsEmpty) return;
             var em = timelineQueryWorld.EntityManager;
 
             try
