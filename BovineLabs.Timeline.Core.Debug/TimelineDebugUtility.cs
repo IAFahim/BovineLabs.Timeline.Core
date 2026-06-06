@@ -16,7 +16,7 @@ namespace BovineLabs.Timeline.Core.Debug
             var world = World.DefaultGameObjectInjectionWorld;
             if (world == null)
                 return false;
-            
+
 
             var em = world.EntityManager;
             if (!em.HasSingleton<DrawSystem.Singleton>())
@@ -33,8 +33,8 @@ namespace BovineLabs.Timeline.Core.Debug
             drawer = drawSystem.CreateDrawer();
             return true;
         }
-        
-        
+
+
         public static bool TryGetDrawer<TSystem>(
             ref SystemState state,
             bool forceEnabled,

@@ -47,24 +47,63 @@ namespace BovineLabs.Timeline.Core.Debug
         [ConfigVar("bovinelabs.telemetry.text-nudge", 0.01f, "Forward nudge for text to prevent z-fighting with bars.")]
         public static readonly SharedStatic<float> TextNudge = SharedStatic<float>.GetOrCreate<Tags.TextNudge>();
 
-        [ConfigVar("bovinelabs.telemetry.log-fill", false, "Use logarithmic scale for bar fill when ranges are very large.")]
+        [ConfigVar("bovinelabs.telemetry.log-fill", false,
+            "Use logarithmic scale for bar fill when ranges are very large.")]
         public static readonly SharedStatic<bool> LogFill = SharedStatic<bool>.GetOrCreate<Tags.LogFill>();
 
         private struct Tags
         {
-            public struct FontSize { }
-            public struct TitleSize { }
-            public struct LineHeight { }
-            public struct GroupSpacing { }
-            public struct Indent { }
-            public struct PanelSpacing { }
-            public struct ShadowOffset { }
-            public struct ScaleK { }
-            public struct RowWidth { }
-            public struct BarBgAlpha { }
-            public struct BarFillAlpha { }
-            public struct TextNudge { }
-            public struct LogFill { }
+            public struct FontSize
+            {
+            }
+
+            public struct TitleSize
+            {
+            }
+
+            public struct LineHeight
+            {
+            }
+
+            public struct GroupSpacing
+            {
+            }
+
+            public struct Indent
+            {
+            }
+
+            public struct PanelSpacing
+            {
+            }
+
+            public struct ShadowOffset
+            {
+            }
+
+            public struct ScaleK
+            {
+            }
+
+            public struct RowWidth
+            {
+            }
+
+            public struct BarBgAlpha
+            {
+            }
+
+            public struct BarFillAlpha
+            {
+            }
+
+            public struct TextNudge
+            {
+            }
+
+            public struct LogFill
+            {
+            }
         }
     }
 
@@ -87,20 +126,32 @@ namespace BovineLabs.Timeline.Core.Debug
             Distance = distance;
         }
 
-        public float3 At(float x, float y) => Anchor + Right * (x * Unit) + Up * (y * Unit);
+        public float3 At(float x, float y)
+        {
+            return Anchor + Right * (x * Unit) + Up * (y * Unit);
+        }
 
-        public float Size(float px) => px * Unit * TelemetryConfig.ScaleK.Data;
+        public float Size(float px)
+        {
+            return px * Unit * TelemetryConfig.ScaleK.Data;
+        }
 
         public float3 Normal => math.cross(Right, Up);
 
-        public View NudgeWorld(float3 delta) =>
-            new(Anchor + delta, Right, Up, Unit, Distance);
+        public View NudgeWorld(float3 delta)
+        {
+            return new View(Anchor + delta, Right, Up, Unit, Distance);
+        }
 
-        public View NudgeForward(float epsilon) =>
-            new(Anchor + math.normalizesafe(Normal) * epsilon, Right, Up, Unit, Distance);
+        public View NudgeForward(float epsilon)
+        {
+            return new View(Anchor + math.normalizesafe(Normal) * epsilon, Right, Up, Unit, Distance);
+        }
 
-        public View Shift(float dx, float dy) =>
-            new(Anchor + Right * (dx * Unit) + Up * (dy * Unit), Right, Up, Unit, Distance);
+        public View Shift(float dx, float dy)
+        {
+            return new View(Anchor + Right * (dx * Unit) + Up * (dy * Unit), Right, Up, Unit, Distance);
+        }
 
         public static View WorldFacing(in CameraCulling cam, float3 world, float fixedScale)
         {
@@ -122,12 +173,20 @@ namespace BovineLabs.Timeline.Core.Debug
 
         private static bool EyeFromPlanes(in CameraCulling cam, out float3 eye)
         {
-            var n1 = cam.Left.xyz;  var d1 = cam.Left.w;
-            var n2 = cam.Right.xyz; var d2 = cam.Right.w;
-            var n3 = cam.Top.xyz;   var d3 = cam.Top.w;
+            var n1 = cam.Left.xyz;
+            var d1 = cam.Left.w;
+            var n2 = cam.Right.xyz;
+            var d2 = cam.Right.w;
+            var n3 = cam.Top.xyz;
+            var d3 = cam.Top.w;
             var c23 = math.cross(n2, n3);
             var denom = math.dot(n1, c23);
-            if (math.abs(denom) < 1e-6f) { eye = default; return false; }
+            if (math.abs(denom) < 1e-6f)
+            {
+                eye = default;
+                return false;
+            }
+
             eye = (-d1 * c23 - d2 * math.cross(n3, n1) - d3 * math.cross(n1, n2)) / denom;
             return true;
         }
@@ -142,18 +201,22 @@ namespace BovineLabs.Timeline.Core.Debug
 
     public static class Ink
     {
-        public static readonly Color Label  = new(0.72f, 0.77f, 0.84f, 0.90f);
-        public static readonly Color Value  = new(0.97f, 0.98f, 1f, 1f);
+        public static readonly Color Label = new(0.72f, 0.77f, 0.84f, 0.90f);
+        public static readonly Color Value = new(0.97f, 0.98f, 1f, 1f);
         public static readonly Color Shadow = new(0f, 0f, 0f, 0.85f);
-        public static readonly Color Live   = new(0.36f, 0.92f, 0.55f, 1f);
-        public static readonly Color Idle   = new(0.62f, 0.34f, 0.36f, 0.85f);
-        public static readonly Color Muted  = new(0.55f, 0.58f, 0.65f, 0.90f);
+        public static readonly Color Live = new(0.36f, 0.92f, 0.55f, 1f);
+        public static readonly Color Idle = new(0.62f, 0.34f, 0.36f, 0.85f);
+        public static readonly Color Muted = new(0.55f, 0.58f, 0.65f, 0.90f);
 
-        public static Color Dim(Color c, float alpha) =>
-            new(c.r, c.g, c.b, c.a * math.saturate(alpha));
+        public static Color Dim(Color c, float alpha)
+        {
+            return new Color(c.r, c.g, c.b, c.a * math.saturate(alpha));
+        }
 
-        public static Color WithAlpha(Color c, float a) =>
-            new(c.r, c.g, c.b, a);
+        public static Color WithAlpha(Color c, float a)
+        {
+            return new Color(c.r, c.g, c.b, a);
+        }
     }
 
     public static class Glyph
@@ -229,11 +292,15 @@ namespace BovineLabs.Timeline.Core.Debug
             Text(d, v, 0f, y, title, accent, TelemetryConfig.TitleSize.Data);
         }
 
-        public static float AdvanceLine(float y) =>
-            y - TelemetryConfig.LineHeight.Data;
+        public static float AdvanceLine(float y)
+        {
+            return y - TelemetryConfig.LineHeight.Data;
+        }
 
-        public static float AdvanceGroup(float y) =>
-            y - TelemetryConfig.LineHeight.Data * TelemetryConfig.GroupSpacing.Data;
+        public static float AdvanceGroup(float y)
+        {
+            return y - TelemetryConfig.LineHeight.Data * TelemetryConfig.GroupSpacing.Data;
+        }
     }
 }
 #endif

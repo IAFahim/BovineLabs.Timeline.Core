@@ -1,3 +1,4 @@
+using System;
 using BovineLabs.Timeline.Data;
 using Unity.Collections;
 using Unity.Entities;
@@ -29,7 +30,7 @@ namespace BovineLabs.Timeline.Core
 
                 if (!query.IsEmpty) enabled = false;
             }
-            catch (System.InvalidOperationException)
+            catch (InvalidOperationException)
             {
                 // Wait for AsyncLoadSceneJob to finish
             }
