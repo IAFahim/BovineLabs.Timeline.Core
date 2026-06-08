@@ -1,11 +1,12 @@
-namespace BovineLabs.Timeline.Authoring
-{
-    using BovineLabs.Timeline.Data;
-    using Unity.Entities;
-    using Unity.IntegerTime;
-    using UnityEngine.Playables;
-    using UnityEngine.Timeline;
+using BovineLabs.Timeline.Authoring;
+using BovineLabs.Timeline.Data;
+using Unity.Entities;
+using Unity.IntegerTime;
+using UnityEngine.Playables;
+using UnityEngine.Timeline;
 
+namespace BovineLabs.Timeline.Core.Authoring
+{
     public class TimelineBeginBaker : Baker<PlayableDirector>
     {
         public override void Bake(PlayableDirector director)

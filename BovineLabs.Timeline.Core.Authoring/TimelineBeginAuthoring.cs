@@ -1,8 +1,8 @@
-namespace BovineLabs.Timeline.Authoring
-{
-    using UnityEngine;
-    using UnityEngine.Playables;
+using UnityEngine;
+using UnityEngine.Playables;
 
+namespace BovineLabs.Timeline.Core.Authoring
+{
     public enum TimelineBeginMode : byte
     {
         Manual = 0,

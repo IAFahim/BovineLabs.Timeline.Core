@@ -1,10 +1,10 @@
-namespace BovineLabs.Timeline.Authoring
-{
-    using BovineLabs.Timeline.Data;
-    using Unity.Collections;
-    using Unity.Entities;
-    using UnityEngine;
+using BovineLabs.Timeline.Data;
+using Unity.Collections;
+using Unity.Entities;
+using UnityEngine;
 
+namespace BovineLabs.Timeline.Core.Authoring
+{
     public class TimelinePlayTrigger : MonoBehaviour
     {
         public void Play()
