@@ -6,7 +6,7 @@ namespace BovineLabs.Timeline.Core.Authoring
     public enum TimelineBeginMode : byte
     {
         Manual = 0,
-        OnLoad = 1,
+        OnLoad = 1
     }
 
     [DisallowMultipleComponent]
@@ -15,7 +15,6 @@ namespace BovineLabs.Timeline.Core.Authoring
     {
         public TimelineBeginMode Mode = TimelineBeginMode.OnLoad;
 
-        [Min(0f)]
-        public float DelaySeconds;
+        [Min(0f)] public float DelaySeconds;
     }
 }

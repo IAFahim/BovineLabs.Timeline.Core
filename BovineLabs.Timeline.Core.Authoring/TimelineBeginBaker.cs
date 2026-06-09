@@ -1,4 +1,3 @@
-using BovineLabs.Timeline.Authoring;
 using BovineLabs.Timeline.Data;
 using Unity.Entities;
 using Unity.IntegerTime;
@@ -11,12 +10,9 @@ namespace BovineLabs.Timeline.Core.Authoring
     {
         public override void Bake(PlayableDirector director)
         {
-            if (director.playableAsset is not TimelineAsset)
-            {
-                return;
-            }
+            if (director.playableAsset is not TimelineAsset) return;
 
-            var authoring = this.GetComponent<TimelineBeginAuthoring>();
+            var authoring = GetComponent<TimelineBeginAuthoring>();
 
             var onLoad = authoring != null
                 ? authoring.Mode == TimelineBeginMode.OnLoad
@@ -26,9 +22,9 @@ namespace BovineLabs.Timeline.Core.Authoring
                 ? new DiscreteTime(authoring.DelaySeconds)
                 : DiscreteTime.Zero;
 
-            var entity = this.GetEntity(TransformUsageFlags.None);
-            this.AddComponent(entity, new TimelinePlayRequest { Remaining = remaining });
-            this.SetComponentEnabled<TimelinePlayRequest>(entity, onLoad);
+            var entity = GetEntity(TransformUsageFlags.None);
+            AddComponent(entity, new TimelinePlayRequest { Remaining = remaining });
+            SetComponentEnabled<TimelinePlayRequest>(entity, onLoad);
         }
     }
 }

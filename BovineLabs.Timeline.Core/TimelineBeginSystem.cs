@@ -1,13 +1,12 @@
+using BovineLabs.Timeline.Data;
+using BovineLabs.Timeline.Data.Schedular;
+using Unity.Burst;
+using Unity.Entities;
+using Unity.IntegerTime;
+using UnityEngine;
+
 namespace BovineLabs.Timeline.Schedular
 {
-    using BovineLabs.Core;
-    using BovineLabs.Timeline.Data;
-    using BovineLabs.Timeline.Data.Schedular;
-    using Unity.Burst;
-    using Unity.Entities;
-    using Unity.IntegerTime;
-    using UnityEngine;
-
     [WorldSystemFilter(WorldSystemFilterFlags.LocalSimulation |
                        WorldSystemFilterFlags.ClientSimulation |
                        WorldSystemFilterFlags.ServerSimulation)]
@@ -21,7 +20,7 @@ namespace BovineLabs.Timeline.Schedular
             new BeginJob
             {
                 GameDeltaTime = new DiscreteTime(SystemAPI.Time.DeltaTime),
-                UnscaledDeltaTime = new DiscreteTime(Time.unscaledDeltaTime),
+                UnscaledDeltaTime = new DiscreteTime(Time.unscaledDeltaTime)
             }.ScheduleParallel();
         }
 
@@ -44,10 +43,7 @@ namespace BovineLabs.Timeline.Schedular
                 {
                     request.Remaining -= Elapsed(clock);
 
-                    if (request.Remaining > DiscreteTime.Zero)
-                    {
-                        return;
-                    }
+                    if (request.Remaining > DiscreteTime.Zero) return;
                 }
 
                 active.ValueRW = true;
@@ -59,9 +55,9 @@ namespace BovineLabs.Timeline.Schedular
             {
                 return clock.UpdateMode switch
                 {
-                    ClockUpdateMode.UnscaledGameTime => this.UnscaledDeltaTime,
+                    ClockUpdateMode.UnscaledGameTime => UnscaledDeltaTime,
                     ClockUpdateMode.Constant => clock.DeltaTime,
-                    _ => this.GameDeltaTime,
+                    _ => GameDeltaTime
                 };
             }
         }

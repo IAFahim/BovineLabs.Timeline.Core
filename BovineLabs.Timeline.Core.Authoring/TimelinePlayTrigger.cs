@@ -10,10 +10,7 @@ namespace BovineLabs.Timeline.Core.Authoring
         public void Play()
         {
             var world = World.DefaultGameObjectInjectionWorld;
-            if (world == null)
-            {
-                return;
-            }
+            if (world == null) return;
 
             var em = world.EntityManager;
             using var query = new EntityQueryBuilder(Allocator.Temp)
@@ -22,10 +19,7 @@ namespace BovineLabs.Timeline.Core.Authoring
                 .Build(em);
 
             using var entities = query.ToEntityArray(Allocator.Temp);
-            foreach (var e in entities)
-            {
-                em.SetComponentEnabled<TimelinePlayRequest>(e, true);
-            }
+            foreach (var e in entities) em.SetComponentEnabled<TimelinePlayRequest>(e, true);
         }
     }
 }
