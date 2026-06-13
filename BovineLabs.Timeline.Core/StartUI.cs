@@ -24,11 +24,12 @@ namespace BovineLabs.Timeline.Core
             try
             {
                 var entities = query.ToEntityArray(Allocator.Temp);
-                for (var i = 0; i < entities.Length; i++)
+                var count = entities.Length;
+                for (var i = 0; i < count; i++)
                     em.SetComponentEnabled<TimelineActive>(entities[i], true);
                 entities.Dispose();
 
-                if (!query.IsEmpty) enabled = false;
+                if (count > 0) enabled = false;
             }
             catch (InvalidOperationException)
             {

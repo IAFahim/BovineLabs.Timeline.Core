@@ -143,15 +143,7 @@ namespace BovineLabs.Timeline.Core.Debug
                 if (sweep < 0.005f) continue;
                 var arm = math.mul(quaternion.AxisAngle(normal, start), up) * worldR;
                 var isSet = (mask & (1u << i)) != 0;
-                if (!isSet)
-                {
-                    d.Arc(center, normal, arm, sweep, clearColor);
-                }
-                else
-                {
-                    d.Arc(center, normal, arm, sweep, clearColor);
-                    d.Arc(center, normal, arm, sweep, setColor);
-                }
+                d.Arc(center, normal, arm, sweep, isSet ? setColor : clearColor);
             }
         }
 
