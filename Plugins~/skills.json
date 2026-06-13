@@ -15,6 +15,11 @@
     "description": "|"
   },
   {
+    "id": "unity-combos",
+    "displayName": "Combos",
+    "description": "The designer's craft of building melee combos + attack timing in Arvex — frame data (startup/active/recovery as 60fps frames), combo links/cancels/gatling + buffer/cancel windows, LMB/RMB combo trees, motion-input specials (236P) via CommandSequence->ConditionEvent->reaction, on-hit juggle/hitstop/crit, i-frame windows — orchestrating the input/animation/reaction tracks. Portable, worked examples from vex-ee."
+  },
+  {
     "id": "unity-designer-vocabulary",
     "displayName": "Designer Vocabulary",
     "description": "The Rosetta Stone for BovineLabs \\\"Arvex\\\" gameplay — translates a designer's plain request (\\\"knock the enemy back\\\", \\\"crit for double\\\", \\\"slow the enemy\\\", \\\"explode every 2 dashes\\\") into the right chain + components + numbers, and catalogues the recurring \\\"designer says X / actually built as Y\\\" gaps and traps so an agent can decompose a request correctly BEFORE composing it. Read FIRST when a request is phrased in gameplay terms rather than as a specific Timeline clip; then hand the chosen chain to unity-augment-architecture (composition) and the matching unity-track-* specialist (per-clip). Portable: every name/number/path below is a worked example from vex-ee to rediscover in THIS project; verify schemas and ids live via unity-cli."
@@ -28,6 +33,16 @@
     "id": "unity-gameplay-config",
     "displayName": "Gameplay Config",
     "description": "Designer's map of WHERE core gameplay lives in a BovineLabs \\\"Arvex\\\" project and how to add to it: the Assets/Settings tree (Schemas + ObjectDefinitions), the three auto-maintained registries (EssenceSettings = stats+intrinsics, ReactionSettings = events, ObjectManagementSettings = objdefs), and the exact moves to add a new stat / intrinsic / event / object definition and have it wired in. Explains the auto-register + auto-ID mechanism (you create the asset in the right folder, the editor assigns the key and adds it to the registry — never hand-edit the array), the duplicate/wrong-key traps, and the two-StaggerMeter trap. Use when a designer asks \\\"where do I add a new number/counter/event/spawnable?\\\" or \\\"why isn't my new stat showing up in the dropdown?\\\" Portable to any project with the BovineLabs Core/Reaction/Essence/ObjectManagement packages — the folders and IDs here are a worked example from vex-ee; rediscover them in THIS project. Cross-references unity-stats-intrinsics, unity-reactions, unity-object-definitions, unity-targets, unity-essence-actions, unity-tra-payloads, unity-augment-architecture for the details of USING each thing once it exists."
+  },
+  {
+    "id": "unity-mechanic-cookbook",
+    "displayName": "Mechanic Cookbook",
+    "description": "A concrete recipe catalogue for the whole mechanics designers build repeatedly in Arvex — damage/heal zones, projectile/on-press spawners, expiring clones, threshold procs, meter->impulse responses, buff-on-event, rank LV1-4 scaling — each as designer-ask -> canonical chain -> concrete wiring -> defer-to skills -> gotcha. The concrete complement to unity-augment-architecture (which holds the abstract chains and the D1 composition engine). Portable; every name/path/id is a worked example from vex-ee to rediscover in THIS project."
+  },
+  {
+    "id": "unity-mechanic-diagrams",
+    "displayName": "Mechanic Diagrams",
+    "description": "Masters translating BovineLabs \"Arvex\" game mechanics, combos and systems into the ONLY three allowed Mermaid diagram types — Gantt for Unity Timeline frame data, stateDiagram-v2 for combo/AI/status logic, mindmap for ECS/system architecture — with the strict syntax rules that keep them rendering (Gantt dateFormat X integer frames, no-colon-on-note-line, indentation-only mindmaps). Picks the right type for the request, maps Arvex vocabulary (Essence/Reaction/Augments) onto nodes, and flags the real rendering breakages. Designer-facing diagram craft, NOT how the mechanic is built (defer that to the build skills). Portable to any project; worked examples from vex-ee."
   },
   {
     "id": "unity-object-definitions",
