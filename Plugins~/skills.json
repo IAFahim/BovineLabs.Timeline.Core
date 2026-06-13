@@ -1,0 +1,32 @@
+[
+  {
+    "id": "unity-agent-protocol",
+    "displayName": "Agent Protocol",
+    "description": "|"
+  },
+  {
+    "id": "unity-augment-architecture",
+    "displayName": "Augment Architecture",
+    "description": ">"
+  },
+  {
+    "id": "unity-cli",
+    "displayName": "Cli",
+    "description": "|"
+  },
+  {
+    "id": "unity-player-input",
+    "displayName": "Player Input",
+    "description": ">"
+  },
+  {
+    "id": "unity-stage-foundations",
+    "displayName": "Stage Foundations",
+    "description": "Master of the shared DOTS Timeline ECS stage environment for BovineLabs projects — TimelineReferenceAuthoring as the activation marker, LifeCycle/Targets/Stat authoring, the EntityLink trio, and building/auditing/tearing down the stage objects (director, actor, target, sub-director, physics ball, trigger zone) inside a SubScene. Portable to any project with the BovineLabs Timeline/Core/Reaction/Essence packages; worked example from vex-ee. Use when a track agent needs the stage audited/built/verified or when diagnosing \"DOTS timeline clip silently does nothing\"."
+  },
+  {
+    "id": "unity-track-subdirector",
+    "displayName": "Track Subdirector",
+    "description": "Master of SubDirectorTrack + SubDirectorClip/SubTimelineClip (BovineLabs core timeline package com.bovinelabs.timeline) — timeline nesting via composite timers, scene-vs-asset binding rules, and the no-TimelineReferenceAuthoring-on-sub-directors rule. Portable to any project containing the package; worked example from vex-ee. Use when a designer asks to \"play a cutscene inside a cutscene\" or \"reuse a timeline as a building block\"."
+  }
+]
