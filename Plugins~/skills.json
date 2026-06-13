@@ -15,14 +15,59 @@
     "description": "|"
   },
   {
+    "id": "unity-designer-vocabulary",
+    "displayName": "Designer Vocabulary",
+    "description": "The Rosetta Stone for BovineLabs \\\"Arvex\\\" gameplay — translates a designer's plain request (\\\"knock the enemy back\\\", \\\"crit for double\\\", \\\"slow the enemy\\\", \\\"explode every 2 dashes\\\") into the right chain + components + numbers, and catalogues the recurring \\\"designer says X / actually built as Y\\\" gaps and traps so an agent can decompose a request correctly BEFORE composing it. Read FIRST when a request is phrased in gameplay terms rather than as a specific Timeline clip; then hand the chosen chain to unity-augment-architecture (composition) and the matching unity-track-* specialist (per-clip). Portable: every name/number/path below is a worked example from vex-ee to rediscover in THIS project; verify schemas and ids live via unity-cli."
+  },
+  {
+    "id": "unity-essence-actions",
+    "displayName": "Essence Actions",
+    "description": "The Action* family a designer composes as the \\\"do something\\\" half of a BovineLabs reaction — the always-on actions (ActionCreate spawn, ActionStat buff, ActionIntrinsic counter, ActionTimeline play) plus the lifecycle-keyed addon actions (ActionCreate/Destroy OnActivate · OnDeactivate · OnChanceFail) that turn a reaction into a self-cleaning spawn-and-chain machine. Covers the clone→expiry→explode→knockback pattern, the spawn-on-deactivate / destroy-Self / destroy-Source cleanup idioms, and the chance-fizzle path. Use when a designer says \\\"spawn X, then when it ends spawn Y and remove itself\\\", \\\"buff a stat while active\\\", \\\"grant +N of a counter\\\", or \\\"leave a thing that explodes/cleans-up after a timer\\\". Portable to any project with the BovineLabs Reaction/Essence/ObjectManagement packages + the reaction.addon; worked examples from vex-ee."
+  },
+  {
+    "id": "unity-gameplay-config",
+    "displayName": "Gameplay Config",
+    "description": "Designer's map of WHERE core gameplay lives in a BovineLabs \\\"Arvex\\\" project and how to add to it: the Assets/Settings tree (Schemas + ObjectDefinitions), the three auto-maintained registries (EssenceSettings = stats+intrinsics, ReactionSettings = events, ObjectManagementSettings = objdefs), and the exact moves to add a new stat / intrinsic / event / object definition and have it wired in. Explains the auto-register + auto-ID mechanism (you create the asset in the right folder, the editor assigns the key and adds it to the registry — never hand-edit the array), the duplicate/wrong-key traps, and the two-StaggerMeter trap. Use when a designer asks \\\"where do I add a new number/counter/event/spawnable?\\\" or \\\"why isn't my new stat showing up in the dropdown?\\\" Portable to any project with the BovineLabs Core/Reaction/Essence/ObjectManagement packages — the folders and IDs here are a worked example from vex-ee; rediscover them in THIS project. Cross-references unity-stats-intrinsics, unity-reactions, unity-object-definitions, unity-targets, unity-essence-actions, unity-tra-payloads, unity-augment-architecture for the details of USING each thing once it exists."
+  },
+  {
+    "id": "unity-object-definitions",
+    "displayName": "Object Definitions",
+    "description": "The designer's mental model for \\\"what gets spawned\\\" in BovineLabs Arvex gameplay: the ObjectDefinition asset (stable id + prefab + categories), the ObjectManagementSettings registry that lists them, and the two-way prefab↔ definition link via ObjectDefinitionAuthoring — plus the spawn pose set by InitializeTransformAuthoring (From / To = Owner/Source/Target). Covers the two silent-failure traps a designer hits constantly: duplicate / zero IDs and a broken back-link (right prefab, wrong or null Definition → wrong or no spawn). Use whenever a designer asks \\\"make X spawn a Y\\\", \\\"my payload doesn't appear\\\", \\\"the wrong thing spawned\\\", or \\\"register this prefab so a clip/Action can spawn it\\\". Portable to any project with the BovineLabs Core ObjectManagement + Reaction packages; worked example from vex-ee. Behave per unity-agent-protocol, use the editor per unity-cli; the spawn pose ties into TRA payloads / Targets — cross-reference unity-augment-architecture rather than re-deriving."
+  },
+  {
     "id": "unity-player-input",
     "displayName": "Player Input",
     "description": ">"
   },
   {
+    "id": "unity-reactions",
+    "displayName": "Reactions",
+    "description": "The designer's mental model + concrete authoring of BovineLabs ReactionAuthoring — the \"IF <conditions> THEN <actions>\" brain of every TRA payload. Covers the AND'd condition list (schema · Target · Operation · Value · ComparisonMode), the Features=Value vs Features=Condition split, Active.duration / Active.cooldown timing, Conditions.chanceToTrigger gating (+ ActionDestroyOnChanceFailAuthoring cleanup), doNotReset latching, and the composite (OR/NOT) expression escape hatch. Portable to any project with com.bovinelabs.reaction; worked examples from vex-ee. Use when a designer reasons about WHEN an effect should fire (\"only when health > 0\", \"50% of the time\", \"for 0.65s then 2s cooldown\", \"stagger at 5\")."
+  },
+  {
     "id": "unity-stage-foundations",
     "displayName": "Stage Foundations",
     "description": "Master of the shared DOTS Timeline ECS stage environment for BovineLabs projects — TimelineReferenceAuthoring as the activation marker, LifeCycle/Targets/Stat authoring, the EntityLink trio, and building/auditing/tearing down the stage objects (director, actor, target, sub-director, physics ball, trigger zone) inside a SubScene. Portable to any project with the BovineLabs Timeline/Core/Reaction/Essence packages; worked example from vex-ee. Use when a track agent needs the stage audited/built/verified or when diagnosing \"DOTS timeline clip silently does nothing\"."
+  },
+  {
+    "id": "unity-stats-intrinsics",
+    "displayName": "Stats Intrinsics",
+    "description": "The designer's mental model for BovineLabs Essence numbers — Stat (scaling/modifiable, ×100 fixed-point, base 100 = 1.0×) vs Intrinsic (live integer counter with default/range/clamp-to-stat), the StatSchemaObject/IntrinsicSchemaObject asset shapes, StatAuthoring (AddStats/AddIntrinsics, defaults, CopyFrom snapshot), the Added/Subtracted/Increased/More modify types, and the two-StaggerMeter same-name-different-key trap. Read before reasoning about any gameplay number — what it is, where its schema lives, how it's seeded and modified. Portable to any project with com.bovinelabs.essence; worked example from vex-ee."
+  },
+  {
+    "id": "unity-targets",
+    "displayName": "Targets",
+    "description": "The Owner/Source/Target model a designer reasons about in BovineLabs \"Arvex\" reactions — the Target enum (None/Target/Owner/Source/Self/Custom), the Targets component every reaction/payload carries, how Initialize.Target re-routes a spawned payload's victim, the one-field flip that turns \"damage the enemy\" into \"damage myself\", and the Essence Link \"act on whatever I touched\" override. NOT a Timeline track — a gameplay concept. Portable to any project with com.bovinelabs.reaction + the EntityLinks package; worked example from vex-ee."
+  },
+  {
+    "id": "unity-timeline-track-authoring",
+    "displayName": "Timeline Track Authoring",
+    "description": "The shared ceremony every BovineLabs DOTS Timeline track skill repeats — the SubScene open/SetActive/save/try-finally-restore bracket, the unity-cli-only discovery preamble, the PRE| pre-state capture convention, the undo-appendix STRUCTURE (artifact inventory, restore-director-first ORDER, UNDO-1/2/3/4 templates), and the fresh-load verification protocol — as one canonical home with copy-paste templates using <TRACK_TYPE>/<CLIP_TYPE>/<BIND_TARGET> placeholders. A track skill says \"operate per unity-timeline-track-authoring\" and omits all of it. Portable to any project with the BovineLabs Timeline packages; worked example from vex-ee."
+  },
+  {
+    "id": "unity-tra-payloads",
+    "displayName": "Tra Payloads",
+    "description": "How a designer BUILDS a TRA payload — the spawned \\\"effect object\\\" (Trigger · Reaction · Action) that lands damage/heal/buff on whatever it touched. Covers the four key authoring components (TargetsAuthoring, ReactionAuthoring, an Action* component, ObjectDefinitionAuthoring) plus LifeCycleAuthoring, the three canonical chains that all feed a payload (trigger-spawn, input-event, counter/ expiry), and a full worked example (Cube Weapon → Cube Damage TRA, −30 health). Use when a designer says \\\"when X touches Y, do Z to Y\\\" and you need the payload prefab itself, not the whole augment wiring (see unity-augment-architecture) or one isolated Timeline clip. Portable to any project with the BovineLabs Core/ Reaction/Essence/ObjectManagement packages; worked example from vex-ee."
   },
   {
     "id": "unity-track-subdirector",

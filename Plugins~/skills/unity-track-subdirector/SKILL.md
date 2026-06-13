@@ -14,8 +14,16 @@ exactly this track family — nesting one timeline inside another via bake-time 
 (affine clocks `subTime = hostTime × Scale + Offset`), the two binding models (scene sub-director with
 its OWN tables vs asset-side `TrackBindings`), and the activation rule for sub-directors (deliberately
 NO TimelineReferenceAuthoring). Stage construction belongs to `unity-stage-foundations`; nested
-timelines' CONTENT to the respective track specialists. Behave per unity-agent-protocol; operate the
-editor per unity-cli.
+timelines' CONTENT to the respective track specialists.
+
+**Operate per `unity-timeline-track-authoring`; behave per `unity-agent-protocol`; use the editor per
+`unity-cli`.** The shared skill owns discovery (§1), the SubScene bracket (§2), the undo structure
+(§3), and verification (§4); this skill keeps ONLY the SubDirector-unique facts below.
+
+Shape twist vs the generic bracket: the track takes **NO `[TrackBindingType]` / no generic binding**
+(bindings belong to the nested content), and `SubDirectorClip` needs a **second director** (the
+scene-side sub-director, recipe 4.1) plus **two-sided ExposedReference** wiring (asset GUID + the
+HOST director's scene table). Carry those deltas into the shared bracket.
 
 ## 2. PORTABLE SEMANTICS
 
@@ -97,7 +105,8 @@ composition is exact root-relative math. Worked numbers: §5.
 
 - **DON'T put scene objects in `TrackKeyPair.Target` — they die `{fileID: 0}`** — a scene Transform
   assigned to `Target` read back fine in memory (the lie), but after `SaveAssets()` the YAML held
-  `Target: {fileID: 0}` and a fresh load read `Target=NULL`, no console warning.
+  `Target: {fileID: 0}` and a fresh load read `Target=NULL`, no console warning. (The unity-cli 5d
+  asset→scene-ref trap; the shared skill's bracket exists to guard exactly this.)
 - **DO use asset targets in TrackBindings — they survive** — a TimelineAsset target persisted as
   `{fileID: 11400000, guid: …, type: 2}` and fresh-loaded intact (§5).
 - **DO treat SubDirectorClip as THE scene-friendly nesting clip** — its scene-side sub-director owns
@@ -130,58 +139,36 @@ composition is exact root-relative math. Worked numbers: §5.
   are keyed by track/GUID; all pre-existing entries read back intact after swap-and-restore
   (re-confirmed across three lessons, §5).
 
-## 3. DISCOVERY RECIPES
-Act only through `unity-cli exec` / `unity-cli console`; never the filesystem; never play mode. Follow
-the unity-cli Safe Loop on every mutation. Names below are parameters — discover them in THIS project;
-never assume the worked example (§5).
+## 3. DISCOVERY
 
-**3.1 Confirm the package exists (else report a missing prerequisite — protocol §6):**
-```csharp
-var t = System.Type.GetType("BovineLabs.Timeline.Authoring.SubDirectorTrack, BovineLabs.Timeline.Authoring");
-return t == null ? "MISSING_PREREQUISITE|SubDirectorTrack not found - BovineLabs core timeline package absent here"
-                 : "OK|" + t.AssemblyQualifiedName + "|dataPath=" + UnityEngine.Application.dataPath;
-```
+Run the shared discovery preamble (`unity-timeline-track-authoring` §1) with these substitutions:
+- **D1 package check**: type `BovineLabs.Timeline.Authoring.SubDirectorTrack`, assembly
+  `BovineLabs.Timeline.Authoring`; absent → `MISSING_PREREQUISITE|SubDirectorTrack not found -
+  BovineLabs core timeline package absent here`.
+- **D3 director CLASSIFICATION (track-unique)**: print per director whether its GameObject carries
+  `TimelineReferenceAuthoring`. The **HOST** carries the marker (the activation root); **SUB-DIRECTOR**
+  candidates are directors WITHOUT it. Zero hosts → missing prerequisite (protocol §6).
+- **D4 bind target**: NONE for this track (it takes no binding). Instead discover the **nested
+  content** — the timeline to nest must ALREADY exist: `AssetDatabase.FindAssets("t:TimelineAsset")`,
+  read real paths, choose with the designer. Building nested CONTENT is the content specialist's job
+  (missing-prerequisite boundary); creating an empty host timeline + this track is yours. If recipe
+  4.1 will run, confirm the chosen sub-director name is unused and record `PRE|subDirectorExisted=<bool>`.
+- **D5 pre-state (track-unique addition)**: capture the HOST director's `PRE|playableAsset` and
+  `PRE|binding|` lines AS USUAL, PLUS one `PRE|exposedRef|<guid>: <fileID>` line per EXISTING
+  `m_ExposedReferences` entry — read the SubScene file text inside exec (`File.ReadAllText`) and quote
+  the `m_References` block. Your minted GUID must be the ONLY entry added vs this capture.
 
-**3.2 Find the active scene + SubScene(s):** the unity-cli First Command → `parentScenePath`, `subScenePath`(s).
+## 4. CANONICAL RECIPES (the bracket's track-specific middle)
 
-**3.3 Find and CLASSIFY PlayableDirector(s) inside the SubScene** (read-only additive open, restore
-parent after): `FindObjectsByType<PlayableDirector>(Include, None)`; print per director its hierarchy
-path, `playableAsset` (path or null), and whether its GameObject carries `TimelineReferenceAuthoring`.
-Selection rules (STATE the rule used in your memory card): the HOST carries the marker (the activation
-root); SUB-DIRECTOR candidates are directors WITHOUT it. Zero hosts → missing prerequisite, protocol §6.
+Drive each through the shared SubScene bracket (`unity-timeline-track-authoring` §2): one logical
+change per exec block, print `PRE|` before mutating, save inside the block, verify from a fresh load
+(§7). The SubDirector deltas vs the generic bracket: the track takes NO `SetGenericBinding`;
+SubDirectorClip needs recipe 4.1's second director AND a SECOND scene-side save for the ExposedReference.
 
-**3.4 Find the nested content** — the timeline to nest must ALREADY exist:
-`AssetDatabase.FindAssets("t:TimelineAsset")`, read real paths, choose with the designer. Building
-nested timeline CONTENT is the content specialist's job (missing-prerequisite boundary); creating an empty host
-timeline + this track is yours. If recipe 4.1 will run, confirm the chosen sub-director name is
-unused and record `PRE|subDirectorExisted=<bool>`.
-
-**3.5 Capture the chosen host director's existing state — this is pre-state (`PRE|`)**:
-```csharp
-// PRE|playableAsset=<asset PATH or null>   via AssetDatabase.GetAssetPath(host.playableAsset)
-// PRE|binding|<i>|<track name>|<track type>|<bound object hierarchy path + component type, or null>
-//   one line per GetOutputTracks() of the CURRENT asset, via host.GetGenericBinding(track). Capture
-//   the asset PATH and each track's NAME/index even when the table looks empty — they make the undo
-//   journal replayable (UNDO-1 reloads the old asset by path, re-binds by name/index).
-// PRE|exposedRef|<guid>: <fileID>   one line per EXISTING m_ExposedReferences entry of the host —
-//   read the SubScene file text inside exec (File.ReadAllText, the training-verified method) and
-//   quote the m_References block. Your minted GUID must be the ONLY entry added vs this capture.
-// Record ALL of these in the undo journal (§6) before any mutation.
-```
-
-**Name resolution rule**: `GameObject.Find` misses inactive objects and is ambiguous on duplicate
-names. Discovery (§3.3/3.4) must confirm the chosen name is active and unique in the SubScene; else
-resolve by walking SubScene roots to the recorded hierarchy path (or `FindObjectsByType` filtered by
-`scene`) instead of `Find`.
-
-## 4. CANONICAL RECIPES
-One logical change per exec block; each block prints its `PRE|` capture before mutating (protocol
-§2), saves inside the block, and is verified from a fresh load (§7).
-
-**4.1 The scene-side sub-director** (needed for SubDirectorClip; SubScene bracket):
+**4.1 The scene-side sub-director** (needed for SubDirectorClip; inside the bracket):
 
 ```csharp
-var subDirectorName = "<CHOSEN>"; var nestedAssetPath = "<DISCOVERED>";  // §3.4
+var subDirectorName = "<CHOSEN>"; var nestedAssetPath = "<DISCOVERED>";  // D4
 // CAPTURE (print + journal): PRE|subDirectorExisted=<bool>
 var go = new UnityEngine.GameObject(subDirectorName);   // Transform + PlayableDirector ONLY;
                                                          // optionally parent under a discovered stage root
@@ -209,7 +196,7 @@ clip.clipIn = 0.5; clip.timeScale = 2;                 // <CHOSEN> — caps: Cli
 var ca = (BovineLabs.Timeline.Authoring.SubDirectorClip)clip.asset;
 var er = ca.SubDirector; er.exposedName = System.Guid.NewGuid().ToString(); ca.SubDirector = er; // mint GUID
 UnityEditor.EditorUtility.SetDirty(ca); UnityEditor.AssetDatabase.SaveAssets();  // save #1 (asset side)
-// ---- scene side (SubScene bracket). CAPTURE first: the full §3.5 PRE| set.
+// ---- scene side (SubScene bracket). CAPTURE first: the full §3 D5 PRE| set.
 var host = /* resolve host director per Name resolution rule */;
 host.SetReferenceValue(er.exposedName, subDirector);   // scene table gains <guid>: <fileID>
 host.playableAsset = timeline;                         // if this is to be the host's main asset
@@ -232,23 +219,54 @@ clip2.duration = st.Timeline.duration;   // set yourself — TimelineClip was se
 UnityEditor.AssetDatabase.SaveAssets();
 ```
 
-Timings/values above are example choices, not package constants; verify per §7 in SEPARATE blocks
-before claiming success.
+Timings/values above are example choices, not package constants; verify per the shared verification
+protocol (§4) in SEPARATE blocks before claiming success.
 
-## 5. WORKED EXAMPLE (vex-ee training stage) — example environment; rediscover, never assume
+## 5. UNDO + VERIFICATION DELTA
 
-- Project: `/home/i/GitHub/vex-ee` (`dataPath=/home/i/GitHub/vex-ee/Assets`). Parent scene `Assets/Scenes/Main Scene.unity`;
-  SubScene `Assets/Scenes/Main Sub Scene.unity`. Core sources: `Library/PackageCache/com.bovinelabs.timeline@4331b95d072a/`.
-- Host: `Stage_Director` (PlayableDirector + TimelineReferenceAuthoring). Permanent lesson-06 stage
-  addition, the scene-side sub-director `Stage_SubDirector`:
+Undo per `unity-timeline-track-authoring` §3, verification per §4. The SubDirector inventory adds these
+artifacts beyond the standard created-asset/folder/director-playableAsset set, and they reorder the
+restore:
+- a possibly-created **second director object** `<subDirectorName>` (recipe 4.1): GameObject +
+  PlayableDirector; its `playableAsset` pointer + OWN bindings die with the object, but it MUST be
+  inventoried — a forgotten sub-director keeps the nested asset referenced and, if anyone later adds
+  the activation marker, double-drives the nested timeline (trap, §2). Destroy via `DestroyImmediate`
+  ONLY if `PRE|subDirectorExisted=false`.
+- an added **exposed-reference entry** `<minted GUID> → <sub-director fileID>` in the HOST director's
+  scene-side `m_ExposedReferences` — it SURVIVES deleting the asset; remove it explicitly with
+  `host.ClearReferenceValue(new UnityEngine.PropertyName("<minted GUID>"))` (inverse of
+  `SetReferenceValue`). (vex-ee: left as permanent stage state, so `ClearReferenceValue` was untested
+  there — verify removal via raw YAML afterward; all `PRE|exposedRef|` entries must remain.)
+- a possibly-created **sub-timeline asset** — only if the job CREATED the nested TimelineAsset instead
+  of reusing one; journal it as a separate created asset.
+- **NO generic-binding entry for the track** (it takes no binding); pre-existing entries untouched.
+
+**ORDER (extends the shared restore-director-first rule):** restore the HOST director FIRST
+(playableAsset + remove the minted exposed-ref entry) → THEN destroy the created sub-director (it
+references the nested asset; remove referencers before deleting assets) → THEN delete the created host
+`.playable` → THEN any job-created sub-timeline asset (its only referencer, the host clip, is now gone).
+
+**Verification additions** beyond the shared §4 dump: confirm `exposedName:` non-empty on every
+SubDirectorClip; `TrackKeyPair.Target` entries are `{fileID: 11400000, guid: …}` (asset) not
+`{fileID: 0}` (dead); the minted GUID appears in the HOST's `m_ExposedReferences` with
+`GetReferenceValue → idValid=True`; the sub-director shows `playOnAwake=False` and
+`TimelineReferenceAuthoring=False`; `GetGenericBinding(subDirectorTrack) == null`.
+
+## 6. WORKED EXAMPLE (vex-ee training stage) — example environment; rediscover, never assume
+
+Delta vs the shared stage (`unity-timeline-track-authoring` §5; project `/home/i/GitHub/vex-ee`,
+host `Stage_Director` carrying the activation marker). Core sources:
+`Library/PackageCache/com.bovinelabs.timeline@4331b95d072a/`.
+
+- Permanent lesson-06 stage addition, the scene-side sub-director `Stage_SubDirector`:
   ```
   FRESH|Stage_SubDirector|components=UnityEngine.Transform,UnityEngine.Playables.PlayableDirector
   FRESH|playableAsset=Assets/Training/02-transform-scale-track/ScaleMastery.playable|playOnAwake=False
   FRESH|binding[ScaleTrack]=Stage_Actor (UnityEngine.Transform)
   FRESH|TimelineReferenceAuthoring=False
   ```
-- Asset built in training: `Assets/Training/06-subdirector-track/NestingMastery.playable` — track
-  `NestingTrack`; clip A_SubDirector 0–5s clipIn=0.5 timeScale=2 →
+- Asset built: `Assets/Training/06-subdirector-track/NestingMastery.playable` — track `NestingTrack`;
+  clip A_SubDirector 0–5s clipIn=0.5 timeScale=2 →
   `exposedName=6902b47b-85fa-401f-bf2c-9cb9dd947e28` resolved to Stage_SubDirector's PlayableDirector
   (scene side: `6902b47b-…: {fileID: 808433437}` in Stage_Director's `m_ExposedReferences`, alongside
   lesson-03's pre-existing rotation entry `cca01140-…`); clip B_SubTimeline 5–11s →
@@ -265,86 +283,4 @@ before claiming success.
   `subTime = hostTime × 2 + 0.5` (host t=0 → 0.5s; t=1 → 2.5s; t=2.25 → 5.0s, ScaleMastery's 5s content
   exhausted; timer runs on to 10.5 at host t=5, matching `GetSubTimelineRange = [0.5, 10.5]`).
 - Post-training restore: Stage_Director back on PositionMastery; all 4 scene bindings AND both
-  exposed-ref entries intact. Console baseline: UnityCliConnector HTTP server start, PerformanceTesting
-  IPrebuildSetup/IPostBuildCleanup, TestResults.xml save.
-
-## 6. UNDO APPENDIX
-Artifact inventory for one full run of §4 (vex-ee instance shown in §5):
-1. Created host asset `<assetPath>` (.playable: TimelineAsset + track + clip sub-assets, including
-   the minted `exposedName` GUID — all die with the file).
-2. Possibly-created folder(s) `<assetFolder>` (only if `PRE|folderExisted=false`).
-3. Possibly-created **second director object** `<subDirectorName>` (recipe 4.1): GameObject +
-   PlayableDirector; its `playableAsset` pointer and OWN binding entries die with the object, but it
-   MUST appear in the inventory — a forgotten sub-director keeps the nested asset referenced and, if
-   anyone later adds the activation marker, double-drives the nested timeline's bindings.
-4. Possibly-created **sub-timeline asset** — if the job created the nested TimelineAsset instead of
-   reusing one, that is a separate created asset and must be journaled too (vex-ee training created
-   NONE: ScaleMastery and PositionMastery pre-existed).
-5. Mutated `host.playableAsset` (vex-ee: `EXPECTED:` the pre-wiring value was never printed as a
-   `PRE|` line in the report — the restore target was PositionMastery; capture yours per §3.5).
-6. Added exposed-reference entry `<minted GUID> → <sub-director fileID>` in the HOST director's
-   scene-side `m_ExposedReferences` — it SURVIVES deleting the asset; remove it explicitly.
-7. NO generic-binding entry for the SubDirectorTrack itself (the track takes no binding);
-   pre-existing entries are untouched and must read back unchanged.
-
-ORDER: restore the host director FIRST (playableAsset + remove the minted exposed-ref entry) so
-nothing in the scene references the new asset or claims the sub-director; THEN destroy the created
-sub-director GameObject (it references the nested asset — remove referencers before deleting assets);
-THEN delete the created host .playable; THEN any job-created sub-timeline asset (its only referencer,
-the host clip, is gone). Deleting assets first leaves dangling `{fileID: 0}`-style references in the
-scene file instead of the captured pre-state.
-
-Journal entry templates (protocol §5 — fill from YOUR captures, reverse order):
-
-```csharp
-// UNDO-1: restore host director — playableAsset, my exposed-ref entry, bindings (SubScene bracket)
-var host = /* resolve by CAPTURED hierarchy path */;
-host.ClearReferenceValue(new UnityEngine.PropertyName("<minted GUID>"));   // inverse of SetReferenceValue
-// EXPECTED: ClearReferenceValue was NOT exercised in training (entry left as permanent stage state)
-// — verify removal via raw YAML read of the SubScene afterwards; all PRE|exposedRef| entries remain.
-foreach (var tr in myAsset.GetOutputTracks()) host.ClearGenericBinding(tr); // normally none for this family
-// restore each CAPTURED binding per the PRE|binding| lines (reload the previous asset by captured path,
-// match tracks by name/index, re-find bound objects by captured hierarchy path), then:
-host.playableAsset = /* CAPTURED value: null or LoadAssetAtPath("<CAPTURED pre path>") */;
-UnityEditor.EditorUtility.SetDirty(host); UnityEditor.SceneManagement.EditorSceneManager.SaveScene(subScene);
-```
-
-```csharp
-// UNDO-2: destroy the created sub-director (ONLY if PRE|subDirectorExisted=false; SubScene bracket)
-var go = /* resolve "<subDirectorName>" by the exact captured path/scene */;
-UnityEngine.Object.DestroyImmediate(go);   // its playableAsset pointer + own bindings die with it
-UnityEditor.SceneManagement.EditorSceneManager.SaveScene(subScene);
-```
-
-```csharp
-// UNDO-3: delete the created host .playable (+ folder, only if PRE|folderExisted=false and now empty)
-var ok = UnityEditor.AssetDatabase.DeleteAsset("<assetPath>");
-if (!folderExisted && UnityEditor.AssetDatabase.FindAssets("", new[]{ "<assetFolder>" }).Length == 0)
-    UnityEditor.AssetDatabase.DeleteAsset("<assetFolder>");
-return "UNDONE|deleted=" + ok;
-// UNDO-4: delete the job-created sub-timeline asset — ONLY if your journal recorded creating one.
-```
-
-UNDO-5 (verification, fresh load — protocol §7): reload the SubScene additively; `host.playableAsset`
-equals the CAPTURED pre value; binding table equals the `PRE|binding|` lines; raw SubScene YAML shows
-`m_ExposedReferences` equal to the `PRE|exposedRef|` lines (minted GUID gone, pre-existing intact);
-the sub-director GameObject gone (if UNDO-2 ran); `AssetDatabase.LoadAssetAtPath` at each deleted
-path returns null; restore the parent scene; `unity-cli console --filter error` clean vs baseline.
-
-## 7. VERIFICATION PROTOCOL
-1. **Fresh-load asset dump**: `AssetDatabase.LoadAssetAtPath` the `.playable` at `<assetPath>` in a
-   NEW exec block; dump tracks/clips (name, start/duration/clipIn/timeScale, caps, `DefaultClipDuration`,
-   `Timeline`, each `TrackKeyPair`). In-memory state after a save is not evidence (the scene-target "lie").
-2. **Raw YAML check**: `exposedName:` non-empty on every SubDirectorClip; `Target:` entries are
-   `{fileID: 11400000, guid: …}` (asset) not `{fileID: 0}` (dead); clip timing
-   (`m_Start/m_ClipIn/m_Duration/m_TimeScale`) matches intent.
-3. **Scene-side check from a RELOADED SubScene**: the minted GUID appears in the HOST director's
-   `m_ExposedReferences` and `GetReferenceValue → idValid=True`; the sub-director's own bindings intact,
-   `playOnAwake=False`, `TimelineReferenceAuthoring=False` on the sub-director.
-4. **No-binding proof**: `GetGenericBinding(subDirectorTrack) == null` AND the host director's
-   pre-existing binding entries intact (match the `PRE|binding|` lines).
-5. **Parent-scene restore**: end with `sceneCount=1`,
-   `scene[0]=<parentScenePath>|loaded=True|active=True|dirty=False`, host director back on its prior
-   playableAsset if swapped temporarily.
-6. **Console**: `unity-cli console --filter error` shows nothing new beyond the project's known
-   pre-existing background entries (vex-ee baseline in §5).
+  exposed-ref entries intact. Console baseline per shared §5.
