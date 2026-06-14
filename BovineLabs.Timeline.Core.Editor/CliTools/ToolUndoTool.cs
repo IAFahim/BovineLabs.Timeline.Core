@@ -29,6 +29,11 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 { "exposed_ref_wire", ExposedRefWireTool.HandleCommand },
                 { "timeline_create", TimelineCreateTool.HandleCommand },
                 { "clip_add", ClipAddTool.HandleCommand },
+                { "subscene_object_create", SubsceneObjectCreateTool.HandleCommand },
+                { "subscene_object_delete", SubsceneObjectDeleteTool.HandleCommand },
+                { "subscene_object_spawn_pattern", SubsceneObjectSpawnPatternTool.HandleCommand },
+                { "transform_set", TransformSetTool.HandleCommand },
+                { "transform_orient", TransformOrientTool.HandleCommand },
             };
 
         public static object HandleCommand(JObject @params)
