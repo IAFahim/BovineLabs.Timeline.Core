@@ -34,6 +34,12 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 { "subscene_object_spawn_pattern", SubsceneObjectSpawnPatternTool.HandleCommand },
                 { "transform_set", TransformSetTool.HandleCommand },
                 { "transform_orient", TransformOrientTool.HandleCommand },
+                // L1 ensure_* inverses: only the genuinely-new tools whose undo entries can NAME them.
+                // The wrapper ensures (track/binding/exposed_ref) need no entry — their undo names the
+                // underlying L0 tool (timeline_create / director_bind / exposed_ref_wire) already above.
+                { "ensure_component", EnsureComponentTool.HandleCommand },
+                { "subscene_component_remove", SubsceneComponentRemoveTool.HandleCommand },
+                { "prefab_objdef_link", PrefabObjdefLinkTool.HandleCommand },
             };
 
         public static object HandleCommand(JObject @params)
