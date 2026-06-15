@@ -22,5 +22,12 @@
   ],
   "documentationUrl": "Documentation~/com.bovinelabs.timeline.core.md",
   "changelogUrl": "CHANGELOG.md",
-  "licensesUrl": "LICENSE.md"
+  "licensesUrl": "LICENSE.md",
+  "samples": [
+    {
+      "displayName": "Timeline Core Activation",
+      "description": "Activation lifecycle showcase: TimelineBeginAuthoring (OnLoad / Manual, DelaySeconds), ClockUpdateMode-aware countdown, and TimelinePlayTrigger, visualized with primitive state lanes and TextMeshPro labels.",
+      "path": "Sample~/Timeline Core Activation"
+    }
+  ]
 }
