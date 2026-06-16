@@ -128,7 +128,22 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
             var prop = so.FindProperty(field);
             if (prop == null)
                 throw new ToolException("NOT_FOUND", $"Field '{field}' not found on {owner.GetType().Name}.");
-            ApplyValue(prop, field, owner, value);
+
+            try
+            {
+                ApplyValue(prop, field, owner, value);
+            }
+            catch (ToolException)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                // A bad value (non-numeric int, unknown enum name, overflow, malformed vector) must
+                // return the standard structured error, not leak a raw exception to the CommandRouter.
+                throw new ToolException("BAD_VALUE", $"Field '{field}': could not apply value '{value}': {e.Message}");
+            }
+
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
@@ -183,8 +198,17 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
 
         private static Type EnumFieldType(UnityEngine.Object owner, string field)
         {
-            var fi = owner.GetType().GetField(field,
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            // Walk the (possibly nested, dotted) path so "Initialize.Target" resolves the enum on the
+            // nested struct, not a non-existent leaf field on the top type (which returned null -> threw).
+            var t = owner.GetType();
+            FieldInfo fi = null;
+            foreach (var part in field.Split('.'))
+            {
+                fi = t.GetField(part, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (fi == null) return null;
+                t = fi.FieldType;
+            }
+
             return fi != null && fi.FieldType.IsEnum ? fi.FieldType : null;
         }
 

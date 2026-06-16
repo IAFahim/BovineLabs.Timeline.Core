@@ -7,6 +7,7 @@ using UnityCliConnector;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace BovineLabs.Timeline.Core.Editor.CliTools
 {
@@ -134,6 +135,11 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                         if (parentTransform != null)
                             go.transform.SetParent(parentTransform, false);
 
+                        // Ensure the name is unique among its siblings so the path-based verify below and
+                        // the subscene_object_delete undo resolve THIS object, never a pre-existing
+                        // same-named sibling (which would pass verify on the wrong instance and leak this one).
+                        go.name = UniqueSiblingName(parentTransform, session.Subscene, goName, go);
+
                         SceneObjectUtil.ApplyTransform(@params, go.transform, "position", "euler", "scale");
 
                         foreach (var ct in compTypes)
@@ -186,6 +192,41 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 }
             }
             catch (ToolException e) { return ToolEnvelope.FromException(e); }
+        }
+
+        // A name unique among the object's siblings (existing + already-created-this-batch), so the
+        // hierarchy path identifies it uniquely. Excludes the object itself from the collision check.
+        private static string UniqueSiblingName(Transform parent, Scene scene, string desired, GameObject self)
+        {
+            bool Collides(string n)
+            {
+                if (parent != null)
+                {
+                    for (var i = 0; i < parent.childCount; i++)
+                    {
+                        var c = parent.GetChild(i);
+                        if (c.gameObject != self && c.name == n)
+                            return true;
+                    }
+
+                    return false;
+                }
+
+                foreach (var root in scene.GetRootGameObjects())
+                    if (root != self && root.name == n)
+                        return true;
+                return false;
+            }
+
+            if (!Collides(desired))
+                return desired;
+
+            for (var i = 2; ; i++)
+            {
+                var candidate = $"{desired} ({i})";
+                if (!Collides(candidate))
+                    return candidate;
+            }
         }
     }
 

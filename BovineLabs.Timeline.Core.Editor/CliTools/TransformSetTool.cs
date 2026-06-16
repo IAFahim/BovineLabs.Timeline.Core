@@ -62,7 +62,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                     using (var session = SubSceneSession.Open(subscene))
                     {
                         if (session.Error != null) return session.Error;
-                        var result = Apply(paths, pos, eul, scl, path => session.Find(path));
+                        var result = Apply(paths, pos, eul, scl, path => session.Find(path), session.SubscenePath);
                         session.Save();
                         result.saved = !session.Subscene.isDirty;
                         return Envelope(result, session.SubscenePath);
@@ -70,7 +70,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 }
                 else
                 {
-                    var result = Apply(paths, pos, eul, scl, ResolveInOpenScenes);
+                    var result = Apply(paths, pos, eul, scl, ResolveInOpenScenes, null);
                     result.saved = true; // no subscene save bracket; not asserting scene cleanliness here
                     return Envelope(result, null);
                 }
@@ -90,7 +90,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
 
         internal delegate GameObject Resolver(string path);
 
-        internal static ApplyResult Apply(List<string> paths, Vector3? pos, Vector3? eul, Vector3? scl, Resolver resolve)
+        internal static ApplyResult Apply(List<string> paths, Vector3? pos, Vector3? eul, Vector3? scl, Resolver resolve, string subscenePath)
         {
             var r = new ApplyResult();
             foreach (var path in paths)
@@ -110,18 +110,20 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
 
                 r.applied.Add(path);
 
-                // Per-object undo restores exactly the fields we touched (full snapshot is safe).
-                r.undo.Add(new
+                // Per-object undo restores exactly the fields we touched (full snapshot is safe). The subscene
+                // path MUST travel with the entry, or replay resolves against the closed subscene and silently
+                // fails to restore (the object is unreachable once SubSceneSession.Dispose closes it).
+                var undoParams = new Dictionary<string, object>
                 {
-                    tool = "transform_set",
-                    @params = new
-                    {
-                        objects = new[] { path },
-                        position = new[] { prePos.x, prePos.y, prePos.z },
-                        euler = new[] { preEul.x, preEul.y, preEul.z },
-                        scale = new[] { preScl.x, preScl.y, preScl.z },
-                    },
-                });
+                    ["objects"] = new[] { path },
+                    ["position"] = new[] { prePos.x, prePos.y, prePos.z },
+                    ["euler"] = new[] { preEul.x, preEul.y, preEul.z },
+                    ["scale"] = new[] { preScl.x, preScl.y, preScl.z },
+                };
+                if (!string.IsNullOrEmpty(subscenePath))
+                    undoParams["subscene"] = subscenePath;
+
+                r.undo.Add(new { tool = "transform_set", @params = undoParams });
 
                 // Verify by re-reading the transform values we set.
                 bool ok = true;

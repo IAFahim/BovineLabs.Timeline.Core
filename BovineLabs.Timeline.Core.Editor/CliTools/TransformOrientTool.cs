@@ -73,7 +73,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                         // additively-loaded parent scene (e.g. a 'Player'), so fall back to all open scenes.
                         TransformSetTool.Resolver objResolve = path => session.Find(path);
                         TransformSetTool.Resolver targetResolve = path => session.Find(path) ?? TransformSetTool.ResolveInOpenScenes(path);
-                        var result = Orient(paths, target, pointVec, up, flattenY, objResolve, targetResolve);
+                        var result = Orient(paths, target, pointVec, up, flattenY, objResolve, targetResolve, session.SubscenePath);
                         if (result.error != null) return result.error;
                         session.Save();
                         result.saved = !session.Subscene.isDirty;
@@ -82,7 +82,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 }
                 else
                 {
-                    var result = Orient(paths, target, pointVec, up, flattenY, TransformSetTool.ResolveInOpenScenes, TransformSetTool.ResolveInOpenScenes);
+                    var result = Orient(paths, target, pointVec, up, flattenY, TransformSetTool.ResolveInOpenScenes, TransformSetTool.ResolveInOpenScenes, null);
                     if (result.error != null) return result.error;
                     result.saved = true;
                     return Envelope(result, null);
@@ -103,7 +103,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
             public object error;
         }
 
-        private static OrientResult Orient(List<string> paths, string target, Vector3? point, Vector3 up, bool flattenY, TransformSetTool.Resolver resolve, TransformSetTool.Resolver targetResolve)
+        private static OrientResult Orient(List<string> paths, string target, Vector3? point, Vector3 up, bool flattenY, TransformSetTool.Resolver resolve, TransformSetTool.Resolver targetResolve, string subscenePath)
         {
             var r = new OrientResult();
 
@@ -141,15 +141,15 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
 
                 r.applied.Add(path);
 
-                r.undo.Add(new
+                var undoParams = new Dictionary<string, object>
                 {
-                    tool = "transform_set",
-                    @params = new
-                    {
-                        objects = new[] { path },
-                        euler = new[] { preEul.x, preEul.y, preEul.z },
-                    },
-                });
+                    ["objects"] = new[] { path },
+                    ["euler"] = new[] { preEul.x, preEul.y, preEul.z },
+                };
+                if (!string.IsNullOrEmpty(subscenePath))
+                    undoParams["subscene"] = subscenePath;
+
+                r.undo.Add(new { tool = "transform_set", @params = undoParams });
 
                 // Verify by re-reading the forward vector vs direction-to-target.
                 var checkDir = targetPos - t.position;

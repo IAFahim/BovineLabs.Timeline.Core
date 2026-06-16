@@ -142,10 +142,26 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 case SerializedPropertyType.Enum:
                     if (wanted.Type == JTokenType.String)
                     {
-                        var fi = comp.GetType().GetField(LeafName(field),
-                            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                        if (fi == null || !fi.FieldType.IsEnum) return false;
-                        return prop.intValue == Convert.ToInt32(Enum.Parse(fi.FieldType, wanted.Value<string>(), true));
+                        // Resolve the enum Type by walking the (possibly nested, dotted) field path, then
+                        // Enum.Parse — handles nested struct enums (e.g. "Initialize.Target") AND [Flags]
+                        // comma-combined values, comparing the parsed int to the resolved prop.intValue.
+                        var enumType = ResolveEnumType(comp.GetType(), field);
+                        if (enumType != null)
+                        {
+                            // Broad catch: a bad name (ArgumentException) OR an exotic long/ulong enum value
+                            // overflowing int (OverflowException) must fall through to "not equal", never leak
+                            // a raw exception past the tool's structured-error contract.
+                            try { return prop.intValue == System.Convert.ToInt32(System.Enum.Parse(enumType, wanted.Value<string>(), true)); }
+                            catch (System.Exception) { return false; }
+                        }
+
+                        // Fallback when the type can't be reflected: match a single member name by index.
+                        var names = prop.enumNames;
+                        var wantedName = wanted.Value<string>();
+                        for (int i = 0; i < names.Length; i++)
+                            if (string.Equals(names[i], wantedName, StringComparison.OrdinalIgnoreCase))
+                                return prop.enumValueIndex == i;
+                        return false;
                     }
                     return prop.intValue == wanted.Value<int>();
                 case SerializedPropertyType.ObjectReference:
@@ -163,10 +179,20 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
             }
         }
 
-        private static string LeafName(string dottedPath)
+        // Walk a (possibly nested, dotted) serialized field path and return the leaf field's enum Type,
+        // or null if any segment is missing or the leaf is not an enum.
+        private static System.Type ResolveEnumType(System.Type root, string dottedPath)
         {
-            int i = dottedPath.LastIndexOf('.');
-            return i < 0 ? dottedPath : dottedPath.Substring(i + 1);
+            var t = root;
+            System.Reflection.FieldInfo fi = null;
+            foreach (var part in dottedPath.Split('.'))
+            {
+                fi = t.GetField(part, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (fi == null) return null;
+                t = fi.FieldType;
+            }
+
+            return fi != null && fi.FieldType.IsEnum ? fi.FieldType : null;
         }
     }
 }

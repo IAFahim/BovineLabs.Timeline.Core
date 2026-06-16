@@ -54,31 +54,76 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 if (!typeof(TrackAsset).IsAssignableFrom(trackType))
                     return ToolEnvelope.Error("BAD_VALUE", $"'{trackType.FullName}' is not a TrackAsset.");
 
-                if (pre.assetExisted && overwrite) AssetDatabase.DeleteAsset(assetPath);
                 AssetUtil.EnsureFolders(assetPath);
 
+                // When replacing, build the new asset at a temp path and swap it in only after it is
+                // fully built. A bad track_fields key/value then fails BEFORE the original is touched,
+                // so an error can never leave the caller with a deleted original and a partial replacement.
+                bool replacing = pre.assetExisted && overwrite;
+                string buildPath = replacing
+                    ? Path.Combine(Path.GetDirectoryName(assetPath), Path.GetFileNameWithoutExtension(assetPath) + "__vexnew" + Path.GetExtension(assetPath)).Replace('\\', '/')
+                    : assetPath;
+                if (replacing && Capture.AssetExistence(buildPath).assetExisted)
+                    return ToolEnvelope.Error("BAD_VALUE",
+                        $"The private scratch path '{buildPath}' is occupied by an existing asset; move or delete it first " +
+                        $"(it is the temp build path used to safely overwrite '{assetPath}').");
+
                 var timeline = ScriptableObject.CreateInstance<TimelineAsset>();
-                AssetDatabase.CreateAsset(timeline, assetPath);
-
                 string finalTrackName = string.IsNullOrEmpty(trackName) ? trackType.Name : trackName;
-                var track = TimelineReflect.CreateTrack(timeline, trackType, null, finalTrackName);
+                TrackAsset track;
 
-                if (trackFields != null)
-                    foreach (var kv in trackFields)
-                        TimelineReflect.SetSerializedField(track, kv.Key, kv.Value);
+                try
+                {
+                    // CreateAsset and CreateTrack must be INSIDE the cleanup try: if CreateTrack throws
+                    // (e.g. an abstract/invalid track type), the scratch asset created at buildPath would
+                    // otherwise orphan and then permanently block future overwrites via the collision guard.
+                    AssetDatabase.CreateAsset(timeline, buildPath);
+                    track = TimelineReflect.CreateTrack(timeline, trackType, null, finalTrackName);
+
+                    if (trackFields != null)
+                        foreach (var kv in trackFields)
+                            TimelineReflect.SetSerializedField(track, kv.Key, kv.Value);
+                }
+                catch
+                {
+                    AssetDatabase.DeleteAsset(buildPath);
+                    throw;
+                }
 
                 EditorUtility.SetDirty(timeline);
                 EditorUtility.SetDirty(track);
                 AssetDatabase.SaveAssets();
 
-                var undo = new object[]
+                if (replacing)
                 {
-                    new { tool = "asset_delete", @params = new { asset = assetPath, folder_if_empty = pre.folderExisted ? null : pre.folder } },
-                };
+                    // Verify the delete succeeded BEFORE moving, so we never attempt a swap into an
+                    // occupied path and never claim "original deleted" when it wasn't.
+                    if (!AssetDatabase.DeleteAsset(assetPath))
+                        return ToolEnvelope.Error("BAD_VALUE",
+                            $"Could not delete the existing asset at '{assetPath}' to replace it; the rebuilt replacement is preserved at '{buildPath}'.",
+                            new { orphan = buildPath, target = assetPath });
+
+                    var moveErr = AssetDatabase.MoveAsset(buildPath, assetPath);
+                    if (!string.IsNullOrEmpty(moveErr))
+                        return ToolEnvelope.Error("BAD_VALUE",
+                            $"Original '{assetPath}' was deleted but the rebuilt replacement could not be moved into place: {moveErr}. " +
+                            $"The built asset is preserved at '{buildPath}' — move it to '{assetPath}' to recover.",
+                            new { orphan = buildPath, target = assetPath });
+                }
+
+                // A fresh create undoes cleanly (delete the asset). An OVERWRITE is irreversible: the
+                // original asset's content was deleted and never snapshotted, so emit NO undo — replaying
+                // asset_delete would destroy the replacement and leave nothing, which is worse than a no-op.
+                var undo = replacing
+                    ? new object[0]
+                    : new object[]
+                    {
+                        new { tool = "asset_delete", @params = new { asset = assetPath, folder_if_empty = pre.folderExisted ? null : pre.folder } },
+                    };
 
                 return ToolEnvelope.Ok(
-                    $"Created {finalTrackName} in {Path.GetFileName(assetPath)}.",
-                    result: new { assetPath, trackName = finalTrackName, trackType = trackType.FullName },
+                    $"Created {finalTrackName} in {Path.GetFileName(assetPath)}." + (replacing ? " Overwrote the existing asset (irreversible)." : string.Empty),
+                    result: new { assetPath, trackName = finalTrackName, trackType = trackType.FullName, overwroteExisting = replacing },
                     pre: new { pre.folderExisted, pre.assetExisted },
                     undo: undo);
             }

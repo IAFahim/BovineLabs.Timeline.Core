@@ -84,9 +84,18 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                     steps.Add(new { tool, ok = !isErr, response });
                 }
 
+                // A rollback that partially failed must NOT report success: an agent checking only the
+                // top-level envelope status would conclude the scene was restored when it was not.
+                if (fail > 0)
+                    return ToolEnvelope.Error(
+                        "BAD_VALUE",
+                        $"Replayed {arr.Count} undo step(s): {ok} ok, {fail} failed.",
+                        new { ok, fail, steps });
+
                 return ToolEnvelope.Ok(
                     $"Replayed {arr.Count} undo step(s): {ok} ok, {fail} failed.",
-                    result: new { ok, fail, steps });
+                    result: new { ok, fail, steps },
+                    verify: new { pass = true, checks = steps });
             }
             catch (ToolException e) { return ToolEnvelope.FromException(e); }
         }

@@ -43,6 +43,9 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
 
             [ToolParameter("Run timeline_verify at the end (default true).")]
             public bool Verify { get; set; }
+
+            [ToolParameter("Allow replacing an existing asset at the path (default false). When false, an existing asset fails the call before anything is mutated, so a hand-built timeline is never clobbered.")]
+            public bool Overwrite { get; set; }
         }
 
         public static object HandleCommand(JObject @params)
@@ -63,6 +66,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 var bind = p.RequireObject("bind");
                 var exposedRefs = p.OptArray("exposed_refs");
                 bool verify = p.OptBool("verify", true);
+                bool overwrite = p.OptBool("overwrite", false);
 
                 // Track name must agree with what timeline_create will produce (= resolved type simple name).
                 string realTrackName = string.IsNullOrEmpty(trackName)
@@ -90,7 +94,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                     ["asset"] = asset,
                     ["track_type"] = trackType,
                     ["track_name"] = realTrackName,
-                    ["overwrite"] = true,
+                    ["overwrite"] = overwrite,
                 };
                 if (trackFields != null) createParams["track_fields"] = trackFields;
                 var rCreate = TimelineCreateTool.HandleCommand(createParams);
@@ -185,14 +189,19 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
         // Roll back whatever already succeeded, then return the error — never leave a half-authored track.
         private static object Fail(string step, object resp, List<object> undo)
         {
+            bool rollbackComplete = true;
             if (undo.Count > 0)
             {
                 var rev = new List<object>(undo);
                 rev.Reverse();
-                ToolUndoTool.HandleCommand(new JObject { ["undo"] = JArray.FromObject(rev) });
+                var undoResp = ToolUndoTool.HandleCommand(new JObject { ["undo"] = JArray.FromObject(rev) });
+                rollbackComplete = !(undoResp is ErrorResponse);
             }
+
             string msg = resp is ErrorResponse er ? er.message : "failed";
-            return ToolEnvelope.Error("RECIPE_FAILED", $"track_author rolled back at {step}: {msg}", new { step });
+            return ToolEnvelope.Error("RECIPE_FAILED",
+                $"track_author rolled back at {step}{(rollbackComplete ? "" : " (ROLLBACK INCOMPLETE — manual cleanup may be needed)")}: {msg}",
+                new { step, rollbackComplete });
         }
     }
 }

@@ -113,14 +113,19 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
         // Roll back the journal collected so far, then return the originating error — never leave a half-built mechanic.
         private static object Fail(string label, object resp, List<object> journal)
         {
+            bool rollbackComplete = true;
             if (journal.Count > 0)
             {
                 var rev = new List<object>(journal);
                 rev.Reverse();
-                ToolUndoTool.HandleCommand(new JObject { ["undo"] = JArray.FromObject(rev) });
+                var undoResp = ToolUndoTool.HandleCommand(new JObject { ["undo"] = JArray.FromObject(rev) });
+                rollbackComplete = !(undoResp is ErrorResponse);
             }
+
             string msg = Responses.Message(resp) ?? "failed";
-            return ToolEnvelope.Error("RECIPE_FAILED", $"mechanic_author rolled back at '{label}': {msg}", new { label });
+            return ToolEnvelope.Error("RECIPE_FAILED",
+                $"mechanic_author rolled back at '{label}'{(rollbackComplete ? "" : " (ROLLBACK INCOMPLETE — manual cleanup may be needed)")}: {msg}",
+                new { label, rollbackComplete });
         }
     }
 }

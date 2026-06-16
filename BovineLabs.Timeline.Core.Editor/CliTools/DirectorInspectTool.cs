@@ -11,7 +11,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
     [UnityCliTool(
         Name = "director_inspect",
         Group = "vex",
-        Description = "Per director in the SubScene: path, playableAsset, binding table, exposed refs, and the TimelineReferenceAuthoring activation marker (§3.3 + §3.5 in one read).")]
+        Description = "Per director in the SubScene: path, playableAsset, binding table, exposed refs, and the TimelineBeginAuthoring activation marker (§3.3 + §3.5 in one read).")]
     public static class DirectorInspectTool
     {
         public class Parameters

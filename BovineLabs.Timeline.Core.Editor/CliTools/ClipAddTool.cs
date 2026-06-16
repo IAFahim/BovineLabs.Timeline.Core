@@ -65,7 +65,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
 
                 clip.start = p.OptFloat("start", 0f);
                 if (p.Has("duration")) clip.duration = p.OptFloat("duration", (float)clip.duration);
-                clip.displayName = p.OptString("display_name", clipType.Name);
+                clip.displayName = UniqueClipName(track, clip, p.OptString("display_name", clipType.Name));
                 if (p.Has("blend_in")) clip.blendInDuration = p.OptFloat("blend_in", 0f);
                 if (p.Has("blend_out")) clip.blendOutDuration = p.OptFloat("blend_out", 0f);
 
@@ -102,6 +102,29 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                     undo: undo);
             }
             catch (ToolException e) { return ToolEnvelope.FromException(e); }
+        }
+
+        // Guarantee the new clip's display name is unique on the track, so the clip_remove undo
+        // (which matches by display name) can never remove a pre-existing same-named clip instead.
+        private static string UniqueClipName(TrackAsset track, TimelineClip self, string desired)
+        {
+            bool Collides(string n)
+            {
+                foreach (var c in track.GetClips())
+                    if (c != self && c.displayName == n)
+                        return true;
+                return false;
+            }
+
+            if (!Collides(desired))
+                return desired;
+
+            for (var i = 2; ; i++)
+            {
+                var candidate = $"{desired} ({i})";
+                if (!Collides(candidate))
+                    return candidate;
+            }
         }
     }
 }

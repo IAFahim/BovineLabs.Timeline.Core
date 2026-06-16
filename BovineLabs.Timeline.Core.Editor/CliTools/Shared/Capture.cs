@@ -14,7 +14,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
     /// </summary>
     internal static class Capture
     {
-        public const string MarkerComponent = "TimelineReferenceAuthoring";
+        public const string MarkerComponent = "TimelineBeginAuthoring";
 
         public sealed class BindingPre
         {
@@ -37,7 +37,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
             public string path;
             public string scene;
             public string playableAsset;
-            public bool hasTimelineReferenceAuthoring;
+            public bool hasActivationMarker;
             public List<BindingPre> bindings = new List<BindingPre>();
             public List<ExposedRefPre> exposedRefs = new List<ExposedRefPre>();
         }
@@ -49,7 +49,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
                 path = Hierarchy.PathOf(d.gameObject),
                 scene = d.gameObject.scene.path,
                 playableAsset = d.playableAsset != null ? AssetDatabase.GetAssetPath(d.playableAsset) : null,
-                hasTimelineReferenceAuthoring = HasMarker(d.gameObject),
+                hasActivationMarker = HasMarker(d.gameObject),
             };
 
             if (d.playableAsset is TimelineAsset timeline)
