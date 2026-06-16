@@ -36,7 +36,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                     if (session.Error != null) return session.Error;
 
                     var directors = new List<Capture.DirectorPre>();
-                    var all = Object.FindObjectsByType<PlayableDirector>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                    var all = Object.FindObjectsByType<PlayableDirector>(FindObjectsInactive.Include);
                     foreach (var d in all)
                     {
                         if (d.gameObject.scene != session.Subscene) continue;

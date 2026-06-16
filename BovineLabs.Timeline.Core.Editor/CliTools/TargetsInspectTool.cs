@@ -46,7 +46,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                     var holders = new List<object>();
 
                     // TargetsAuthoring lives in an unreferenced assembly; resolve every Component by type name.
-                    var allComponents = Object.FindObjectsByType<Component>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                    var allComponents = Object.FindObjectsByType<Component>(FindObjectsInactive.Include);
                     foreach (var component in allComponents)
                     {
                         if (component == null) continue;
