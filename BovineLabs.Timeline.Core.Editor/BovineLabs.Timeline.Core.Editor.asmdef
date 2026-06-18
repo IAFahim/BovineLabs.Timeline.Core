@@ -4,6 +4,7 @@
   "references": [
     "UnityCliConnector.Editor",
     "BovineLabs.Timeline.Core.Authoring",
+    "BovineLabs.Core.Extensions.Authoring",
     "Unity.Timeline"
   ],
   "includePlatforms": [
