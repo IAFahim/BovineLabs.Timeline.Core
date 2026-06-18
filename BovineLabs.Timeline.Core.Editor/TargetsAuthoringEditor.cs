@@ -6,66 +6,74 @@ namespace BovineLabs.Timeline.Core.Editor
 {
     using BovineLabs.Reaction.Authoring.Core;
     using UnityEditor;
+    using UnityEditor.UIElements;
     using UnityEngine;
+    using UnityEngine.UIElements;
 
     /// <summary>
     /// Inspector for <see cref="TargetsAuthoring" /> that reveals the baker's hidden fallback: an empty
     /// <c>Owner</c>/<c>Source</c> bakes to the hierarchy root (<see cref="TargetsAuthoring" />'s Baker
-    /// <c>GetEntityOrDefaultRoot</c>), not to nothing. Empty fields show a slight inline hint of what they
+    /// <c>GetEntityOrDefaultRoot</c>), not to nothing. Empty fields get a slight italic hint of what they
     /// actually resolve to, so "None" stops lying. <c>Target</c>/<c>Custom</c> have no fallback, so they're
-    /// left untouched.
+    /// left untouched. UI Toolkit (not IMGUI) so the package's own <c>[PrefabElement]</c> drawer on
+    /// <c>Initialize</c> still renders.
     /// </summary>
     [CustomEditor(typeof(TargetsAuthoring))]
     public sealed class TargetsAuthoringEditor : UnityEditor.Editor
     {
-        // Width reserved on the right for the object-picker dot, so the hint never sits over it.
-        private const float PickerDotWidth = 18f;
-
         /// <inheritdoc />
-        public override void OnInspectorGUI()
+        public override VisualElement CreateInspectorGUI()
         {
-            this.serializedObject.Update();
+            var root = new VisualElement();
 
-            var root = ((TargetsAuthoring)this.target).transform.root.gameObject;
+            this.AddRoleWithHint(root, "Owner");
+            this.AddRoleWithHint(root, "Source");
+            root.Add(new PropertyField(this.serializedObject.FindProperty("Target")));
+            root.Add(new PropertyField(this.serializedObject.FindProperty("Custom")));
+            root.Add(new PropertyField(this.serializedObject.FindProperty("Initialize")));
 
-            DrawWithRootHint("Owner", this.serializedObject.FindProperty("Owner"), root);
-            DrawWithRootHint("Source", this.serializedObject.FindProperty("Source"), root);
-            EditorGUILayout.PropertyField(this.serializedObject.FindProperty("Target"));
-            EditorGUILayout.PropertyField(this.serializedObject.FindProperty("Custom"));
-            EditorGUILayout.PropertyField(this.serializedObject.FindProperty("Initialize"), true);
-
-            this.serializedObject.ApplyModifiedProperties();
+            return root;
         }
 
-        // Draw the field normally, then — if empty — overlay a dim right-aligned hint of the baked root.
-        // The hint is a non-interactive label beside the left-aligned "None (Game Object)" text, so the
-        // underlying ObjectField (and its picker dot) keep working. Never writes to the property.
-        private static void DrawWithRootHint(string label, SerializedProperty prop, GameObject root)
+        // Draw the role's object field, plus a dim italic hint line beneath it (right-aligned, so it never
+        // overlaps the field's own "None (Game Object)" text) showing the root it bakes to while empty.
+        private void AddRoleWithHint(VisualElement parent, string fieldName)
         {
-            var rect = EditorGUILayout.GetControlRect();
-            EditorGUI.PropertyField(rect, prop, new GUIContent(label));
+            var prop = this.serializedObject.FindProperty(fieldName);
+            var authoring = (TargetsAuthoring)this.target;
 
-            if (prop.objectReferenceValue != null || root == null)
+            var field = new PropertyField(prop);
+            parent.Add(field);
+
+            var hint = new Label
             {
-                return;
+                pickingMode = PickingMode.Ignore,
+            };
+            hint.style.unityFontStyleAndWeight = FontStyle.Italic;
+            hint.style.unityTextAlign = TextAnchor.MiddleRight;
+            hint.style.fontSize = 10;
+            hint.style.opacity = 0.55f;
+            hint.style.marginTop = -2;
+            hint.style.marginBottom = 2;
+            parent.Add(hint);
+
+            void Refresh()
+            {
+                if (prop.objectReferenceValue == null && authoring != null)
+                {
+                    var rootName = authoring.transform.root.gameObject.name;
+                    hint.text = $"↳ bakes to “{rootName}” (auto · root)";
+                    hint.tooltip = $"Empty → the baker assigns the hierarchy root “{rootName}”.";
+                    hint.style.display = DisplayStyle.Flex;
+                }
+                else
+                {
+                    hint.style.display = DisplayStyle.None;
+                }
             }
 
-            var valueX = rect.x + EditorGUIUtility.labelWidth + 2f;
-            var hintRect = new Rect(valueX, rect.y, rect.xMax - valueX - PickerDotWidth, rect.height);
-
-            var style = new GUIStyle(EditorStyles.miniLabel)
-            {
-                alignment = TextAnchor.MiddleRight,
-                fontStyle = FontStyle.Italic,
-            };
-
-            var prev = GUI.color;
-            GUI.color = new Color(1f, 1f, 1f, 0.5f);
-            GUI.Label(
-                hintRect,
-                new GUIContent($"→ {root.name} (auto · root)", $"Empty → bakes to the hierarchy root '{root.name}'."),
-                style);
-            GUI.color = prev;
+            Refresh();
+            field.TrackPropertyValue(prop, _ => Refresh());
         }
     }
 }
