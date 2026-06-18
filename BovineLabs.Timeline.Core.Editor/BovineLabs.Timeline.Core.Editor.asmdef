@@ -5,6 +5,8 @@
     "UnityCliConnector.Editor",
     "BovineLabs.Timeline.Core.Authoring",
     "BovineLabs.Core.Extensions.Authoring",
+    "BovineLabs.Reaction.Data",
+    "BovineLabs.Reaction.Authoring",
     "Unity.Timeline"
   ],
   "includePlatforms": [
