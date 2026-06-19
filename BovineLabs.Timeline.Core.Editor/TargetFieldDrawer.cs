@@ -11,10 +11,10 @@ namespace BovineLabs.Timeline.Core.Editor
     using UnityEngine;
 
     /// <summary>
-    /// Draws every <see cref="Target" /> enum field with a small <b>ping</b> button that highlights the GameObject
-    /// the chosen role resolves to — read straight from the <see cref="TargetsAuthoring" /> on the same object
-    /// (Owner/Source fall back to the hierarchy root, mirroring the baker; Self is the object itself). So a designer
-    /// picking "Owner" can immediately see *which* GameObject that is, instead of mentally tracing the wiring.
+    /// Draws every <see cref="Target" /> enum field with a ◎ button that opens (Alt+P style) the GameObject the
+    /// chosen role resolves to — read from the <see cref="TargetsAuthoring" /> on the same object, or, on a Timeline
+    /// clip, from the object the track is bound to. Owner/Source fall back to the hierarchy root (mirroring the
+    /// baker); Self is the object itself. So a designer picking "Owner" sees *which* GameObject that is.
     /// </summary>
     [CustomPropertyDrawer(typeof(Target))]
     public sealed class TargetFieldDrawer : PropertyDrawer
@@ -27,24 +27,13 @@ namespace BovineLabs.Timeline.Core.Editor
             EditorGUI.BeginProperty(position, label, property);
 
             var popupRect = new Rect(position.x, position.y, position.width - ButtonWidth - 2f, position.height);
-            var pingRect = new Rect(position.xMax - ButtonWidth, position.y, ButtonWidth, position.height);
+            var buttonRect = new Rect(position.xMax - ButtonWidth, position.y, ButtonWidth, position.height);
 
             EditorGUI.PropertyField(popupRect, property, label);
 
             var go = ResolveGameObject(property, out var role);
-            using (new EditorGUI.DisabledScope(go == null))
-            {
-                var tooltip = go != null
-                    ? $"Ping '{go.name}' — the GameObject '{role}' resolves to."
-                    : role == Target.None
-                        ? "No role selected."
-                        : $"'{role}' has no GameObject assigned on this object's TargetsAuthoring.";
-
-                if (GUI.Button(pingRect, new GUIContent("◎", tooltip)) && go != null)
-                {
-                    EditorGUIUtility.PingObject(go);
-                }
-            }
+            var disabledTip = role == Target.None ? "No role selected." : $"'{role}' has no resolvable GameObject here.";
+            EditorInspect.OpenButton(buttonRect, go, disabledTip);
 
             EditorGUI.EndProperty();
         }
@@ -57,11 +46,20 @@ namespace BovineLabs.Timeline.Core.Editor
         }
 
         // Map the selected role to its GameObject via the nearest TargetsAuthoring, matching the baker's fallbacks.
+        // On a component: the sibling/parent TargetsAuthoring. On a Timeline clip: the object the track is bound to.
         private static GameObject ResolveGameObject(SerializedProperty property, out Target role)
         {
             role = Current(property);
+            if (role == Target.None)
+                return null;
 
-            if (property.serializedObject.targetObject is not Component component || role == Target.None)
+            var component = property.serializedObject.targetObject as Component;
+            if (component == null)
+            {
+                TimelineBinding.TryGetBoundComponent(property, out component);
+            }
+
+            if (component == null)
                 return null;
 
             if (role == Target.Self)

@@ -7,7 +7,8 @@
     "BovineLabs.Core.Extensions.Authoring",
     "BovineLabs.Reaction.Data",
     "BovineLabs.Reaction.Authoring",
-    "Unity.Timeline"
+    "Unity.Timeline",
+    "Unity.Timeline.Editor"
   ],
   "includePlatforms": [
     "Editor"

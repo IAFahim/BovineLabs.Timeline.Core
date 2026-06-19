@@ -45,29 +45,32 @@ namespace BovineLabs.Timeline.Core.Editor
             var field = new PropertyField(prop);
             parent.Add(field);
 
-            var hint = new Label
-            {
-                pickingMode = PickingMode.Ignore,
-            };
+            // The auto-baked root as a ◎ button: click to open that GameObject's Properties window (Alt+P).
+            GameObject resolvedRoot = null;
+            var hint = new Button(() => EditorInspect.Open(resolvedRoot));
             hint.style.unityFontStyleAndWeight = FontStyle.Italic;
             hint.style.unityTextAlign = TextAnchor.MiddleRight;
             hint.style.fontSize = 10;
-            hint.style.opacity = 0.55f;
+            hint.style.opacity = 0.7f;
+            hint.style.height = 15;
             hint.style.marginTop = -2;
             hint.style.marginBottom = 2;
+            hint.style.paddingTop = 0;
+            hint.style.paddingBottom = 0;
             parent.Add(hint);
 
             void Refresh()
             {
                 if (prop.objectReferenceValue == null && authoring != null)
                 {
-                    var rootName = authoring.transform.root.gameObject.name;
-                    hint.text = $"↳ bakes to “{rootName}” (auto · root)";
-                    hint.tooltip = $"Empty → the baker assigns the hierarchy root “{rootName}”.";
+                    resolvedRoot = authoring.transform.root.gameObject;
+                    hint.text = $"◎ bakes to “{resolvedRoot.name}” (auto · root)";
+                    hint.tooltip = $"Empty → the baker assigns the hierarchy root “{resolvedRoot.name}”. Click to open it.";
                     hint.style.display = DisplayStyle.Flex;
                 }
                 else
                 {
+                    resolvedRoot = null;
                     hint.style.display = DisplayStyle.None;
                 }
             }
