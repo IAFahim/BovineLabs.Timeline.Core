@@ -17,12 +17,13 @@ namespace BovineLabs.Timeline.Core.Debug
             if (world == null)
                 return false;
 
-
-            var em = world.EntityManager;
-            if (!em.HasSingleton<DrawSystem.Singleton>())
+            // Dispose the query: there is no system here to own/cache it, and em.GetSingletonRW would leak an
+            // unowned query every call.
+            using var query = world.EntityManager.CreateEntityQuery(ComponentType.ReadWrite<DrawSystem.Singleton>());
+            if (query.IsEmptyIgnoreFilter)
                 return false;
 
-            ref var drawSystem = ref em.GetSingletonRW<DrawSystem.Singleton>().ValueRW;
+            ref var drawSystem = ref query.GetSingletonRW<DrawSystem.Singleton>().ValueRW;
 
             if (!forceEnabled)
             {
@@ -42,12 +43,14 @@ namespace BovineLabs.Timeline.Core.Debug
             where TSystem : unmanaged, ISystem
         {
             drawer = default;
-            var em = state.EntityManager;
 
-            if (!em.HasSingleton<DrawSystem.Singleton>())
+            // Use the system's cached query (state.GetEntityQuery) instead of em.GetSingletonRW, which created
+            // and leaked an unowned EntityQuery on every call.
+            var query = state.GetEntityQuery(ComponentType.ReadWrite<DrawSystem.Singleton>());
+            if (query.IsEmptyIgnoreFilter)
                 return false;
 
-            ref var drawSystem = ref em.GetSingletonRW<DrawSystem.Singleton>().ValueRW;
+            ref var drawSystem = ref query.GetSingletonRW<DrawSystem.Singleton>().ValueRW;
 
             if (!forceEnabled)
             {
