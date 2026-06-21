@@ -66,6 +66,20 @@ and treat THAT project root as ground truth. To know which DOTS tracks/clips act
 exist, reflection-enumerate `DOTSTrack` subclasses in the live editor instead of
 trusting a written catalog (assemblies and packages drift).
 
+### WATCH OUT: git worktrees (sibling `<repo>-<name>` dirs)
+This repo may be checked out into several **git worktrees** living next to it, e.g.
+`/home/i/GitHub/vex-ee` AND `/home/i/GitHub/vex-ee-combat` (branch `ut/combat`), each
+with its OWN editor instance and its OWN private `Library/`. They are the SAME repo,
+different working trees. This breaks every "I assume the path" shortcut:
+- `unity-cli` attaches to ONE running editor. Do not assume it's the main checkout —
+  always confirm with `unity-cli exec "return UnityEngine.Application.dataPath;"` and
+  use THAT root for every path you build. A `vex-ee-*` suffix means you're in a worktree.
+- Never edit files in one worktree path and verify/save in another — they have separate
+  `Library/`, separate scene state, separate locks. Mixing paths = "my change vanished".
+- A second editor on a `-<name>` sibling is EXPECTED, not a stray duplicate to kill.
+- Tracked files (Assets/, Packages/) are shared content but live on different branches
+  per worktree; `Library/` is NOT shared (each is an independent import cache).
+
 ### First Command For Any Scene Task
 Always run this before creating, moving, deleting, or modifying scene objects:
 
