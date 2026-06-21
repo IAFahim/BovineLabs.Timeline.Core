@@ -72,33 +72,11 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                     throw new ToolException("BAD_VALUE", "Provide only one of 'primitive' or 'prefab', not both.");
                 if (count < 1) count = 1;
 
-                PrimitiveType primType = default;
-                if (!string.IsNullOrEmpty(primitive))
-                {
-                    if (!Enum.TryParse(primitive, true, out primType))
-                        throw new ToolException("BAD_VALUE", $"Unknown primitive '{primitive}'. Use Cube/Sphere/Capsule/Cylinder/Plane/Quad.");
-                }
-
-                UnityEngine.Object prefabAsset = null;
-                if (!string.IsNullOrEmpty(prefab))
-                {
-                    prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(prefab);
-                    if (prefabAsset == null)
-                        throw new ToolException("NOT_FOUND", $"No prefab GameObject at '{prefab}'.");
-                }
+                PrimitiveType primType = ResolvePrimitive(primitive);
+                UnityEngine.Object prefabAsset = ResolvePrefab(prefab);
 
                 // Resolve component types up-front so a bad name fails before any mutation.
-                var compTypes = new List<Type>();
-                if (componentsArr != null)
-                {
-                    foreach (var tok in componentsArr)
-                    {
-                        var tn = tok?.ToString();
-                        if (string.IsNullOrEmpty(tn)) continue;
-                        var ct = SceneObjectUtil.ResolveComponentType(tn);
-                        compTypes.Add(ct);
-                    }
-                }
+                var compTypes = ResolveComponentTypes(componentsArr);
 
                 string baseName = !string.IsNullOrEmpty(name) ? name
                     : !string.IsNullOrEmpty(primitive) ? primitive : Path.GetFileNameWithoutExtension(prefab);
@@ -194,29 +172,50 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
             catch (ToolException e) { return ToolEnvelope.FromException(e); }
         }
 
+        /// <summary>Parse the primitive enum (default when no primitive requested).</summary>
+        private static PrimitiveType ResolvePrimitive(string primitive)
+        {
+            if (string.IsNullOrEmpty(primitive))
+                return default;
+            if (!Enum.TryParse(primitive, true, out PrimitiveType primType))
+                throw new ToolException("BAD_VALUE", $"Unknown primitive '{primitive}'. Use Cube/Sphere/Capsule/Cylinder/Plane/Quad.");
+            return primType;
+        }
+
+        /// <summary>Load the prefab asset (null when no prefab requested).</summary>
+        private static UnityEngine.Object ResolvePrefab(string prefab)
+        {
+            if (string.IsNullOrEmpty(prefab))
+                return null;
+            var prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(prefab);
+            if (prefabAsset == null)
+                throw new ToolException("NOT_FOUND", $"No prefab GameObject at '{prefab}'.");
+            return prefabAsset;
+        }
+
+        /// <summary>Resolve each requested component type up-front so a bad name fails before any mutation.</summary>
+        private static List<Type> ResolveComponentTypes(JArray componentsArr)
+        {
+            var compTypes = new List<Type>();
+            if (componentsArr == null)
+                return compTypes;
+            foreach (var tok in componentsArr)
+            {
+                var tn = tok?.ToString();
+                if (string.IsNullOrEmpty(tn)) continue;
+                compTypes.Add(SceneObjectUtil.ResolveComponentType(tn));
+            }
+
+            return compTypes;
+        }
+
         // A name unique among the object's siblings (existing + already-created-this-batch), so the
         // hierarchy path identifies it uniquely. Excludes the object itself from the collision check.
         private static string UniqueSiblingName(Transform parent, Scene scene, string desired, GameObject self)
         {
-            bool Collides(string n)
-            {
-                if (parent != null)
-                {
-                    for (var i = 0; i < parent.childCount; i++)
-                    {
-                        var c = parent.GetChild(i);
-                        if (c.gameObject != self && c.name == n)
-                            return true;
-                    }
-
-                    return false;
-                }
-
-                foreach (var root in scene.GetRootGameObjects())
-                    if (root != self && root.name == n)
-                        return true;
-                return false;
-            }
+            bool Collides(string n) => parent != null
+                ? CollidesWithChild(parent, self, n)
+                : CollidesWithRoot(scene, self, n);
 
             if (!Collides(desired))
                 return desired;
@@ -227,6 +226,26 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 if (!Collides(candidate))
                     return candidate;
             }
+        }
+
+        private static bool CollidesWithChild(Transform parent, GameObject self, string n)
+        {
+            for (var i = 0; i < parent.childCount; i++)
+            {
+                var c = parent.GetChild(i);
+                if (c.gameObject != self && c.name == n)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool CollidesWithRoot(Scene scene, GameObject self, string n)
+        {
+            foreach (var root in scene.GetRootGameObjects())
+                if (root != self && root.name == n)
+                    return true;
+            return false;
         }
     }
 

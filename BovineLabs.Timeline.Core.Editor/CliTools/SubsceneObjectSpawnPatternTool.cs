@@ -70,30 +70,9 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 float spacing = p.OptFloat("spacing", 1f);
                 float radius = p.OptFloat("radius", spacing);
 
-                if (count < 1)
-                    throw new ToolException("BAD_VALUE", "'count' must be >= 1.");
-                if (string.IsNullOrEmpty(primitive) && string.IsNullOrEmpty(prefab))
-                    throw new ToolException("MISSING_PREREQUISITE", "Provide either 'primitive' or 'prefab'.");
-                if (!string.IsNullOrEmpty(primitive) && !string.IsNullOrEmpty(prefab))
-                    throw new ToolException("BAD_VALUE", "Provide only one of 'primitive' or 'prefab', not both.");
-
-                if (pattern != "grid" && pattern != "circle" && pattern != "line" && pattern != "stack")
-                    throw new ToolException("BAD_VALUE", $"Unknown pattern '{pattern}'. Use grid/circle/line/stack.");
-
-                PrimitiveType primType = default;
-                if (!string.IsNullOrEmpty(primitive))
-                {
-                    if (!Enum.TryParse(primitive, true, out primType))
-                        throw new ToolException("BAD_VALUE", $"Unknown primitive '{primitive}'. Use Cube/Sphere/Capsule/Cylinder/Plane/Quad.");
-                }
-
-                UnityEngine.Object prefabAsset = null;
-                if (!string.IsNullOrEmpty(prefab))
-                {
-                    prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(prefab);
-                    if (prefabAsset == null)
-                        throw new ToolException("NOT_FOUND", $"No prefab GameObject at '{prefab}'.");
-                }
+                ValidateSpawnArgs(count, primitive, prefab, pattern);
+                PrimitiveType primType = ResolvePrimitive(primitive);
+                UnityEngine.Object prefabAsset = ResolvePrefab(prefab);
 
                 Vector3 origin = SceneObjectUtil.ReadVector3(@params, "origin") ?? Vector3.zero;
                 Vector3? scale = ReadScale(@params, "scale");
@@ -198,6 +177,40 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 }
             }
             catch (ToolException e) { return ToolEnvelope.FromException(e); }
+        }
+
+        /// <summary>Reject bad counts, the primitive/prefab xor, and unknown patterns before any mutation.</summary>
+        private static void ValidateSpawnArgs(int count, string primitive, string prefab, string pattern)
+        {
+            if (count < 1)
+                throw new ToolException("BAD_VALUE", "'count' must be >= 1.");
+            if (string.IsNullOrEmpty(primitive) && string.IsNullOrEmpty(prefab))
+                throw new ToolException("MISSING_PREREQUISITE", "Provide either 'primitive' or 'prefab'.");
+            if (!string.IsNullOrEmpty(primitive) && !string.IsNullOrEmpty(prefab))
+                throw new ToolException("BAD_VALUE", "Provide only one of 'primitive' or 'prefab', not both.");
+            if (pattern != "grid" && pattern != "circle" && pattern != "line" && pattern != "stack")
+                throw new ToolException("BAD_VALUE", $"Unknown pattern '{pattern}'. Use grid/circle/line/stack.");
+        }
+
+        /// <summary>Parse the primitive enum (default when no primitive requested).</summary>
+        private static PrimitiveType ResolvePrimitive(string primitive)
+        {
+            if (string.IsNullOrEmpty(primitive))
+                return default;
+            if (!Enum.TryParse(primitive, true, out PrimitiveType primType))
+                throw new ToolException("BAD_VALUE", $"Unknown primitive '{primitive}'. Use Cube/Sphere/Capsule/Cylinder/Plane/Quad.");
+            return primType;
+        }
+
+        /// <summary>Load the prefab asset (null when no prefab requested).</summary>
+        private static UnityEngine.Object ResolvePrefab(string prefab)
+        {
+            if (string.IsNullOrEmpty(prefab))
+                return null;
+            var prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(prefab);
+            if (prefabAsset == null)
+                throw new ToolException("NOT_FOUND", $"No prefab GameObject at '{prefab}'.");
+            return prefabAsset;
         }
 
         /// <summary>Local-space offset for the i-th object in the chosen pattern, centered on the container origin.</summary>

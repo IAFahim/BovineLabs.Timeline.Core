@@ -2,6 +2,7 @@
 using BovineLabs.Core.Extensions;
 using BovineLabs.Quill;
 using Unity.Entities;
+using Unity.Mathematics;
 
 namespace BovineLabs.Timeline.Core.Debug
 {
@@ -48,6 +49,40 @@ namespace BovineLabs.Timeline.Core.Debug
                 return false;
 
             ref var drawSystem = ref em.GetSingletonRW<DrawSystem.Singleton>().ValueRW;
+
+            if (!forceEnabled)
+            {
+                drawer = drawSystem.CreateDrawer<TSystem>();
+                return drawer.IsEnabled;
+            }
+
+            drawer = drawSystem.CreateDrawer();
+            return true;
+        }
+
+        /// <summary>
+        ///     As <see cref="TryGetDrawer{TSystem}(ref SystemState, bool, out Drawer)" /> but also returns the camera eye
+        ///     position so a draw job can pick its <see cref="DebugTier" /> via <see cref="TimelineDebugTier.Resolve" />.
+        /// </summary>
+        public static bool TryGetDrawer<TSystem>(
+            ref SystemState state,
+            bool forceEnabled,
+            out Drawer drawer,
+            out float3 viewer,
+            out bool hasViewer)
+            where TSystem : unmanaged, ISystem
+        {
+            drawer = default;
+            viewer = default;
+            hasViewer = false;
+
+            var em = state.EntityManager;
+            if (!em.HasSingleton<DrawSystem.Singleton>())
+                return false;
+
+            ref var drawSystem = ref em.GetSingletonRW<DrawSystem.Singleton>().ValueRW;
+
+            hasViewer = TimelineDebugTier.TryGetViewer(drawSystem.CameraCulling, out viewer);
 
             if (!forceEnabled)
             {
