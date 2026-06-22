@@ -33,7 +33,6 @@ namespace BovineLabs.Timeline.Core
             }
             catch (InvalidOperationException)
             {
-                // Wait for AsyncLoadSceneJob to finish
             }
         }
 

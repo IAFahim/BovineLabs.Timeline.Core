@@ -9,19 +9,12 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
     [UnityCliTool(
         Name = "tool_undo",
         Group = "vex",
-        Description = "Replay a data.undo journal in one call: dispatch each { tool, params } entry IN ORDER. Closes the undo loop so a mutator's undo is replayable in one step.")]
+        Description =
+            "Replay a data.undo journal in one call: dispatch each { tool, params } entry IN ORDER. Closes the undo loop so a mutator's undo is replayable in one step.")]
     public static class ToolUndoTool
     {
-        public class Parameters
-        {
-            [ToolParameter("The data.undo journal: an ordered array of { tool, params } invocations to replay.", Required = true)]
-            public object[] Undo { get; set; }
-        }
-
-        // Direct in-process handlers — NOT CommandRouter.Dispatch (the dispatch semaphore is
-        // non-reentrant; re-dispatching from inside a handler would deadlock the connector).
         private static readonly Dictionary<string, Func<JObject, object>> Handlers =
-            new Dictionary<string, Func<JObject, object>>
+            new()
             {
                 { "asset_delete", AssetDeleteTool.HandleCommand },
                 { "clip_remove", ClipRemoveTool.HandleCommand },
@@ -34,12 +27,10 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 { "subscene_object_spawn_pattern", SubsceneObjectSpawnPatternTool.HandleCommand },
                 { "transform_set", TransformSetTool.HandleCommand },
                 { "transform_orient", TransformOrientTool.HandleCommand },
-                // L1 ensure_* inverses: only the genuinely-new tools whose undo entries can NAME them.
-                // The wrapper ensures (track/binding/exposed_ref) need no entry — their undo names the
-                // underlying L0 tool (timeline_create / director_bind / exposed_ref_wire) already above.
+
                 { "ensure_component", EnsureComponentTool.HandleCommand },
                 { "subscene_component_remove", SubsceneComponentRemoveTool.HandleCommand },
-                { "prefab_objdef_link", PrefabObjdefLinkTool.HandleCommand },
+                { "prefab_objdef_link", PrefabObjdefLinkTool.HandleCommand }
             };
 
         public static object HandleCommand(JObject @params)
@@ -60,7 +51,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                         continue;
                     }
 
-                    string tool = eo["tool"]?.ToString();
+                    var tool = eo["tool"]?.ToString();
                     var prm = eo["params"] as JObject ?? new JObject();
 
                     if (string.IsNullOrEmpty(tool) || !Handlers.TryGetValue(tool, out var handler))
@@ -71,7 +62,10 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                     }
 
                     object response;
-                    try { response = handler(prm); }
+                    try
+                    {
+                        response = handler(prm);
+                    }
                     catch (Exception ex)
                     {
                         fail++;
@@ -79,13 +73,12 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                         continue;
                     }
 
-                    bool isErr = response is ErrorResponse;
-                    if (isErr) fail++; else ok++;
+                    var isErr = response is ErrorResponse;
+                    if (isErr) fail++;
+                    else ok++;
                     steps.Add(new { tool, ok = !isErr, response });
                 }
 
-                // A rollback that partially failed must NOT report success: an agent checking only the
-                // top-level envelope status would conclude the scene was restored when it was not.
                 if (fail > 0)
                     return ToolEnvelope.Error(
                         "BAD_VALUE",
@@ -94,10 +87,20 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
 
                 return ToolEnvelope.Ok(
                     $"Replayed {arr.Count} undo step(s): {ok} ok, {fail} failed.",
-                    result: new { ok, fail, steps },
+                    new { ok, fail, steps },
                     verify: new { pass = true, checks = steps });
             }
-            catch (ToolException e) { return ToolEnvelope.FromException(e); }
+            catch (ToolException e)
+            {
+                return ToolEnvelope.FromException(e);
+            }
+        }
+
+        public class Parameters
+        {
+            [ToolParameter("The data.undo journal: an ordered array of { tool, params } invocations to replay.",
+                Required = true)]
+            public object[] Undo { get; set; }
         }
     }
 }

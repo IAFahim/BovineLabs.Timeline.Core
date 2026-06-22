@@ -11,9 +11,91 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
     [UnityCliTool(
         Name = "ensure_binding",
         Group = "vex",
-        Description = "Idempotent: ensure a director's track is bound to a component on a SubScene object. already-ok when the binding already matches; otherwise sets it via director_bind (passing its undo through). dry_run reports without mutating.")]
+        Description =
+            "Idempotent: ensure a director's track is bound to a component on a SubScene object. already-ok when the binding already matches; otherwise sets it via director_bind (passing its undo through). dry_run reports without mutating.")]
     public static class EnsureBindingTool
     {
+        public static object HandleCommand(JObject @params)
+        {
+            var p = new Params(@params);
+            try
+            {
+                var directorSel = p.RequireString("director");
+                var assetPath = p.RequireString("asset");
+                var trackSel = p.RequireString("track");
+                var objPath = p.RequireString("object");
+                var component = p.RequireString("component");
+                var dryRun = p.OptBool("dry_run", false);
+                var target = new { director = directorSel, track = trackSel, @object = objPath, component };
+
+                bool satisfied;
+                object before;
+                using (var session = SubSceneSession.Open(p.OptString("subscene")))
+                {
+                    if (session.Error != null) return session.Error;
+
+                    var go = session.Find(directorSel);
+                    if (go == null)
+                        return ToolEnvelope.Error("NOT_FOUND", $"No object '{directorSel}' in {session.SubscenePath}.");
+                    var d = go.GetComponent<PlayableDirector>();
+                    if (d == null) return ToolEnvelope.Error("NOT_FOUND", $"'{directorSel}' has no PlayableDirector.");
+
+                    var timeline = d.playableAsset as TimelineAsset;
+                    string boundPath = null, boundComp = null;
+                    if (timeline != null && AssetDatabase.GetAssetPath(timeline) == assetPath)
+                    {
+                        var track = TimelineReflect.FindTrack(timeline, trackSel);
+                        if (track != null)
+                        {
+                            var bound = d.GetGenericBinding(track);
+                            if (bound is Component bc)
+                            {
+                                boundPath = Hierarchy.PathOf(bc.gameObject);
+                                boundComp = bc.GetType().Name;
+                            }
+                            else if (bound is GameObject bg)
+                            {
+                                boundPath = Hierarchy.PathOf(bg);
+                                boundComp = "GameObject";
+                            }
+                        }
+                    }
+
+                    satisfied = boundPath == objPath && boundComp == component;
+                    before = new { assetAssigned = timeline != null, boundPath, boundComponent = boundComp };
+                }
+
+                if (satisfied)
+                    return EnsureResult.Satisfied($"{trackSel} already bound to {objPath}.{component}.", target,
+                        before);
+                if (dryRun)
+                    return EnsureResult.WouldFixResult($"Would bind {trackSel} -> {objPath}.{component}.", target,
+                        before);
+
+                var bindParams = new JObject
+                {
+                    ["subscene"] = p.OptString("subscene"),
+                    ["director"] = directorSel,
+                    ["asset"] = assetPath,
+                    ["bindings"] = new JArray(new JObject
+                    {
+                        ["track"] = trackSel,
+                        ["object"] = objPath,
+                        ["component"] = component
+                    })
+                };
+                var resp = DirectorBindTool.HandleCommand(bindParams);
+                if (Responses.IsError(resp)) return resp;
+
+                return EnsureResult.Applied($"Bound {trackSel} -> {objPath}.{component}.",
+                    target, before, new { boundPath = objPath, boundComponent = component }, Responses.Undo(resp));
+            }
+            catch (ToolException e)
+            {
+                return ToolEnvelope.FromException(e);
+            }
+        }
+
         public class Parameters
         {
             [ToolParameter("Subscene .unity path. Default: auto-detected.")]
@@ -36,73 +118,6 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
 
             [ToolParameter("Report-only: check satisfaction without mutating (default false).")]
             public bool DryRun { get; set; }
-        }
-
-        public static object HandleCommand(JObject @params)
-        {
-            var p = new Params(@params);
-            try
-            {
-                string directorSel = p.RequireString("director");
-                string assetPath = p.RequireString("asset");
-                string trackSel = p.RequireString("track");
-                string objPath = p.RequireString("object");
-                string component = p.RequireString("component");
-                bool dryRun = p.OptBool("dry_run", false);
-                var target = new { director = directorSel, track = trackSel, @object = objPath, component };
-
-                bool satisfied;
-                object before;
-                using (var session = SubSceneSession.Open(p.OptString("subscene")))
-                {
-                    if (session.Error != null) return session.Error;
-
-                    var go = session.Find(directorSel);
-                    if (go == null) return ToolEnvelope.Error("NOT_FOUND", $"No object '{directorSel}' in {session.SubscenePath}.");
-                    var d = go.GetComponent<PlayableDirector>();
-                    if (d == null) return ToolEnvelope.Error("NOT_FOUND", $"'{directorSel}' has no PlayableDirector.");
-
-                    // The binding lives against whatever asset is currently on the director; if the wanted
-                    // asset isn't yet assigned the binding cannot match — treat as unsatisfied.
-                    var timeline = d.playableAsset as TimelineAsset;
-                    string boundPath = null, boundComp = null;
-                    if (timeline != null && AssetDatabase.GetAssetPath(timeline) == assetPath)
-                    {
-                        var track = TimelineReflect.FindTrack(timeline, trackSel);
-                        if (track != null)
-                        {
-                            var bound = d.GetGenericBinding(track);
-                            if (bound is Component bc) { boundPath = Hierarchy.PathOf(bc.gameObject); boundComp = bc.GetType().Name; }
-                            else if (bound is GameObject bg) { boundPath = Hierarchy.PathOf(bg); boundComp = "GameObject"; }
-                        }
-                    }
-
-                    satisfied = boundPath == objPath && boundComp == component;
-                    before = new { assetAssigned = timeline != null, boundPath, boundComponent = boundComp };
-                }
-
-                if (satisfied) return EnsureResult.Satisfied($"{trackSel} already bound to {objPath}.{component}.", target, before);
-                if (dryRun) return EnsureResult.WouldFixResult($"Would bind {trackSel} -> {objPath}.{component}.", target, before);
-
-                var bindParams = new JObject
-                {
-                    ["subscene"] = p.OptString("subscene"),
-                    ["director"] = directorSel,
-                    ["asset"] = assetPath,
-                    ["bindings"] = new JArray(new JObject
-                    {
-                        ["track"] = trackSel,
-                        ["object"] = objPath,
-                        ["component"] = component,
-                    }),
-                };
-                var resp = DirectorBindTool.HandleCommand(bindParams);
-                if (Responses.IsError(resp)) return resp;
-
-                return EnsureResult.Applied($"Bound {trackSel} -> {objPath}.{component}.",
-                    target, before, after: new { boundPath = objPath, boundComponent = component }, undo: Responses.Undo(resp));
-            }
-            catch (ToolException e) { return ToolEnvelope.FromException(e); }
         }
     }
 }

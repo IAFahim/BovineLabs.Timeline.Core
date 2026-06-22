@@ -10,22 +10,17 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
     [UnityCliTool(
         Name = "project_doctor",
         Group = "vex",
-        Description = "READ-ONLY project health scan. Finds folders that contain more than one .asmdef file — Unity refuses to compile ANY assembly in such a folder, and the failure surfaces elsewhere as a confusing 'metadata file <X>.dll could not be found', blocking the whole editor and every CLI tool. Run this FIRST whenever the editor 'won't compile' or a tool cannot reach the editor. Default scans Assets + Packages.")]
+        Description =
+            "READ-ONLY project health scan. Finds folders that contain more than one .asmdef file — Unity refuses to compile ANY assembly in such a folder, and the failure surfaces elsewhere as a confusing 'metadata file <X>.dll could not be found', blocking the whole editor and every CLI tool. Run this FIRST whenever the editor 'won't compile' or a tool cannot reach the editor. Default scans Assets + Packages.")]
     public static class ProjectDoctorTool
     {
-        public class Parameters
-        {
-            [ToolParameter("Project-relative folder to scan (e.g. 'Assets' or 'Packages'). Omit = scan both Assets and Packages.")]
-            public string Root { get; set; }
-        }
-
         public static object HandleCommand(JObject @params)
         {
             var p = new Params(@params);
             try
             {
                 var projectRoot = Directory.GetParent(Application.dataPath)!.FullName;
-                string root = p.OptString("root");
+                var root = p.OptString("root");
                 var roots = string.IsNullOrEmpty(root)
                     ? new[] { "Assets", "Packages" }
                     : new[] { root };
@@ -54,19 +49,33 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                     if (kv.Value.Count > 1)
                         conflicts.Add(new { folder = kv.Key, asmdefs = kv.Value.ToArray() });
 
-                bool healthy = conflicts.Count == 0;
-                string scanned = string.Join(", ", roots);
-                string msg = healthy
+                var healthy = conflicts.Count == 0;
+                var scanned = string.Join(", ", roots);
+                var msg = healthy
                     ? $"No asmdef-per-folder conflicts found in {scanned} ({byFolder.Count} folder(s) with an asmdef)."
                     : $"{conflicts.Count} folder(s) contain multiple .asmdef files — Unity will not compile any assembly in them. " +
                       "Give each .asmdef its own subfolder.";
 
                 return ToolEnvelope.Ok(
                     msg,
-                    result: new { scanned = roots, healthy, asmdefFolders = byFolder.Count, multiAsmdefFolders = conflicts.ToArray() },
+                    new
+                    {
+                        scanned = roots, healthy, asmdefFolders = byFolder.Count,
+                        multiAsmdefFolders = conflicts.ToArray()
+                    },
                     verify: new { pass = healthy, checks = conflicts.ToArray() });
             }
-            catch (ToolException e) { return ToolEnvelope.FromException(e); }
+            catch (ToolException e)
+            {
+                return ToolEnvelope.FromException(e);
+            }
+        }
+
+        public class Parameters
+        {
+            [ToolParameter(
+                "Project-relative folder to scan (e.g. 'Assets' or 'Packages'). Omit = scan both Assets and Packages.")]
+            public string Root { get; set; }
         }
     }
 }

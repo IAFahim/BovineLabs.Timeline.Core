@@ -7,40 +7,9 @@ using UnityEngine.Timeline;
 
 namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
 {
-    /// <summary>
-    /// Reads real PRE-state from the editor: the exact PRE|playableAsset / PRE|binding| /
-    /// PRE|exposedRef| content the skills capture by hand, plus folder/asset existence — the
-    /// source every mutator's deterministic undo journal is built from.
-    /// </summary>
     internal static class Capture
     {
         public const string MarkerComponent = "TimelineBeginAuthoring";
-
-        public sealed class BindingPre
-        {
-            public int index;
-            public string trackName;
-            public string trackType;
-            public string boundPath;
-            public string boundComponentType;
-        }
-
-        public sealed class ExposedRefPre
-        {
-            public string targetPath;
-            public string targetName;
-            public bool idValid;
-        }
-
-        public sealed class DirectorPre
-        {
-            public string path;
-            public string scene;
-            public string playableAsset;
-            public bool hasActivationMarker;
-            public List<BindingPre> bindings = new List<BindingPre>();
-            public List<ExposedRefPre> exposedRefs = new List<ExposedRefPre>();
-        }
 
         public static DirectorPre Director(PlayableDirector d)
         {
@@ -49,18 +18,26 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
                 path = Hierarchy.PathOf(d.gameObject),
                 scene = d.gameObject.scene.path,
                 playableAsset = d.playableAsset != null ? AssetDatabase.GetAssetPath(d.playableAsset) : null,
-                hasActivationMarker = HasMarker(d.gameObject),
+                hasActivationMarker = HasMarker(d.gameObject)
             };
 
             if (d.playableAsset is TimelineAsset timeline)
             {
-                int idx = 0;
+                var idx = 0;
                 foreach (var track in timeline.GetOutputTracks())
                 {
                     var bound = d.GetGenericBinding(track);
                     string boundPath = null, comp = null;
-                    if (bound is Component bc) { boundPath = Hierarchy.PathOf(bc.gameObject); comp = bc.GetType().Name; }
-                    else if (bound is GameObject bg) { boundPath = Hierarchy.PathOf(bg); comp = "GameObject"; }
+                    if (bound is Component bc)
+                    {
+                        boundPath = Hierarchy.PathOf(bc.gameObject);
+                        comp = bc.GetType().Name;
+                    }
+                    else if (bound is GameObject bg)
+                    {
+                        boundPath = Hierarchy.PathOf(bg);
+                        comp = "GameObject";
+                    }
 
                     pre.bindings.Add(new BindingPre
                     {
@@ -68,7 +45,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
                         trackName = track.name,
                         trackType = track.GetType().Name,
                         boundPath = boundPath,
-                        boundComponentType = comp,
+                        boundComponentType = comp
                     });
                 }
             }
@@ -92,14 +69,14 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
             var arr = so.FindProperty("m_ExposedReferences.m_References");
             if (arr == null || !arr.isArray) return list;
 
-            for (int i = 0; i < arr.arraySize; i++)
+            for (var i = 0; i < arr.arraySize; i++)
             {
                 var el = arr.GetArrayElementAtIndex(i);
-                UnityEngine.Object target = null;
+                Object target = null;
 
                 var end = el.GetEndProperty();
                 var it = el.Copy();
-                bool enter = true;
+                var enter = true;
                 while (it.NextVisible(enter) && !SerializedProperty.EqualContents(it, end))
                 {
                     enter = false;
@@ -118,17 +95,11 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
                 {
                     targetPath = path,
                     targetName = target != null ? target.name : null,
-                    idValid = target != null,
+                    idValid = target != null
                 });
             }
-            return list;
-        }
 
-        public sealed class AssetExistencePre
-        {
-            public string folder;
-            public bool folderExisted;
-            public bool assetExisted;
+            return list;
         }
 
         public static AssetExistencePre AssetExistence(string assetPath)
@@ -138,8 +109,41 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
             {
                 folder = folder,
                 folderExisted = !string.IsNullOrEmpty(folder) && AssetDatabase.IsValidFolder(folder),
-                assetExisted = AssetDatabase.LoadMainAssetAtPath(assetPath) != null,
+                assetExisted = AssetDatabase.LoadMainAssetAtPath(assetPath) != null
             };
+        }
+
+        public sealed class BindingPre
+        {
+            public string boundComponentType;
+            public string boundPath;
+            public int index;
+            public string trackName;
+            public string trackType;
+        }
+
+        public sealed class ExposedRefPre
+        {
+            public bool idValid;
+            public string targetName;
+            public string targetPath;
+        }
+
+        public sealed class DirectorPre
+        {
+            public List<BindingPre> bindings = new();
+            public List<ExposedRefPre> exposedRefs = new();
+            public bool hasActivationMarker;
+            public string path;
+            public string playableAsset;
+            public string scene;
+        }
+
+        public sealed class AssetExistencePre
+        {
+            public bool assetExisted;
+            public string folder;
+            public bool folderExisted;
         }
     }
 }

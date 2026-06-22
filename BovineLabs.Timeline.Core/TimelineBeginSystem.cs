@@ -14,8 +14,6 @@ namespace BovineLabs.Timeline.Schedular
     [UpdateBefore(typeof(ClockUpdateSystem))]
     public partial struct TimelineBeginSystem : ISystem
     {
-        // Not [BurstCompile]: reads UnityEngine.Time.unscaledDeltaTime (managed engine static)
-        // which Burst cannot compile. The hot path (BeginJob) remains Burst-compiled.
         public void OnUpdate(ref SystemState state)
         {
             new BeginJob

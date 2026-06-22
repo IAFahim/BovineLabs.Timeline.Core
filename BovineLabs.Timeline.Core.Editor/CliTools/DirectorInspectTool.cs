@@ -11,25 +11,17 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
     [UnityCliTool(
         Name = "director_inspect",
         Group = "vex",
-        Description = "Per director in the SubScene: path, playableAsset, binding table, exposed refs, and the TimelineBeginAuthoring activation marker (§3.3 + §3.5 in one read).")]
+        Description =
+            "Per director in the SubScene: path, playableAsset, binding table, exposed refs, and the TimelineBeginAuthoring activation marker (§3.3 + §3.5 in one read).")]
     public static class DirectorInspectTool
     {
-        public class Parameters
-        {
-            [ToolParameter("Subscene .unity path. Default: auto-detected from the active scene's SubScene component.")]
-            public string Subscene { get; set; }
-
-            [ToolParameter("One director by hierarchy path/name. Omit = all directors in the subscene.")]
-            public string Director { get; set; }
-        }
-
         public static object HandleCommand(JObject @params)
         {
             var p = new Params(@params);
             try
             {
-                string subscene = p.OptString("subscene");
-                string directorSel = p.OptString("director");
+                var subscene = p.OptString("subscene");
+                var directorSel = p.OptString("director");
 
                 using (var session = SubSceneSession.Open(subscene))
                 {
@@ -47,15 +39,28 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                     }
 
                     if (!string.IsNullOrEmpty(directorSel) && directors.Count == 0)
-                        return ToolEnvelope.Error("NOT_FOUND", $"No director '{directorSel}' in {session.SubscenePath}.");
+                        return ToolEnvelope.Error("NOT_FOUND",
+                            $"No director '{directorSel}' in {session.SubscenePath}.");
 
-                    string sceneName = Path.GetFileNameWithoutExtension(session.SubscenePath);
+                    var sceneName = Path.GetFileNameWithoutExtension(session.SubscenePath);
                     return ToolEnvelope.Ok(
                         $"{directors.Count} director(s) in '{sceneName}'.",
-                        result: new { subscene = session.SubscenePath, directors });
+                        new { subscene = session.SubscenePath, directors });
                 }
             }
-            catch (ToolException e) { return ToolEnvelope.FromException(e); }
+            catch (ToolException e)
+            {
+                return ToolEnvelope.FromException(e);
+            }
+        }
+
+        public class Parameters
+        {
+            [ToolParameter("Subscene .unity path. Default: auto-detected from the active scene's SubScene component.")]
+            public string Subscene { get; set; }
+
+            [ToolParameter("One director by hierarchy path/name. Omit = all directors in the subscene.")]
+            public string Director { get; set; }
         }
     }
 }

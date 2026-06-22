@@ -18,7 +18,6 @@ namespace BovineLabs.Timeline.Core.Debug
             if (world == null)
                 return false;
 
-
             var em = world.EntityManager;
             if (!em.HasSingleton<DrawSystem.Singleton>())
                 return false;
@@ -34,7 +33,6 @@ namespace BovineLabs.Timeline.Core.Debug
             drawer = drawSystem.CreateDrawer();
             return true;
         }
-
 
         public static bool TryGetDrawer<TSystem>(
             ref SystemState state,
@@ -60,10 +58,6 @@ namespace BovineLabs.Timeline.Core.Debug
             return true;
         }
 
-        /// <summary>
-        ///     As <see cref="TryGetDrawer{TSystem}(ref SystemState, bool, out Drawer)" /> but also returns the camera eye
-        ///     position so a draw job can pick its <see cref="DebugTier" /> via <see cref="TimelineDebugTier.Resolve" />.
-        /// </summary>
         public static bool TryGetDrawer<TSystem>(
             ref SystemState state,
             bool forceEnabled,

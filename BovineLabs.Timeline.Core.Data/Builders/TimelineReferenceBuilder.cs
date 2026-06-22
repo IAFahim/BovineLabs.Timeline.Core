@@ -1,4 +1,4 @@
-﻿using BovineLabs.Core.EntityCommands;
+using BovineLabs.Core.EntityCommands;
 
 namespace BovineLabs.Timeline.Core.Data.Builders
 {

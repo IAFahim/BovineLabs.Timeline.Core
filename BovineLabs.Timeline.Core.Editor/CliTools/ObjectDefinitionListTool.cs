@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using BovineLabs.Timeline.Core.Editor.CliTools.Shared;
@@ -5,27 +6,23 @@ using Newtonsoft.Json.Linq;
 using UnityCliConnector;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace BovineLabs.Timeline.Core.Editor.CliTools
 {
     [UnityCliTool(
         Name = "object_definition_list",
         Group = "vex",
-        Description = "Lists every ObjectDefinition asset (the spawn name-tags): assetPath, runtime id, referenced prefab, and whether the prefab's ObjectDefinitionAuthoring back-link points at the same definition. Surfaces the two silent-spawn traps — duplicate / zero ids and broken back-links (§3.4 objdef sweep). READ-ONLY project asset scan.")]
+        Description =
+            "Lists every ObjectDefinition asset (the spawn name-tags): assetPath, runtime id, referenced prefab, and whether the prefab's ObjectDefinitionAuthoring back-link points at the same definition. Surfaces the two silent-spawn traps — duplicate / zero ids and broken back-links (§3.4 objdef sweep). READ-ONLY project asset scan.")]
     public static class ObjectDefinitionListTool
     {
-        public class Parameters
-        {
-            [ToolParameter("Limit to definitions whose assetPath contains this substring (case-insensitive). Omit = every ObjectDefinition in the project.")]
-            public string Filter { get; set; }
-        }
-
         public static object HandleCommand(JObject @params)
         {
             var p = new Params(@params);
             try
             {
-                string filter = p.OptString("filter");
+                var filter = p.OptString("filter");
 
                 var guids = AssetDatabase.FindAssets("t:ObjectDefinition");
                 var definitions = new List<object>();
@@ -33,11 +30,11 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
 
                 foreach (var guid in guids)
                 {
-                    string assetPath = AssetDatabase.GUIDToAssetPath(guid);
+                    var assetPath = AssetDatabase.GUIDToAssetPath(guid);
                     if (string.IsNullOrEmpty(assetPath))
                         continue;
                     if (!string.IsNullOrEmpty(filter) &&
-                        assetPath.IndexOf(filter, System.StringComparison.OrdinalIgnoreCase) < 0)
+                        assetPath.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0)
                         continue;
 
                     var def = AssetDatabase.LoadAssetAtPath<Object>(assetPath);
@@ -45,11 +42,11 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                         continue;
 
                     var so = new SerializedObject(def);
-                    int id = so.FindProperty("id")?.intValue ?? 0;
+                    var id = so.FindProperty("id")?.intValue ?? 0;
                     var prefabProp = so.FindProperty("prefab");
                     var prefab = prefabProp?.objectReferenceValue as GameObject;
-                    string prefabPath = prefab != null ? AssetDatabase.GetAssetPath(prefab) : null;
-                    string friendlyName = so.FindProperty("friendlyName")?.stringValue;
+                    var prefabPath = prefab != null ? AssetDatabase.GetAssetPath(prefab) : null;
+                    var friendlyName = so.FindProperty("friendlyName")?.stringValue;
                     if (string.IsNullOrWhiteSpace(friendlyName))
                         friendlyName = def.name;
 
@@ -94,7 +91,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                         }
                     }
 
-                    bool idUsable = id > 0;
+                    var idUsable = id > 0;
 
                     definitions.Add(new
                     {
@@ -104,7 +101,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                         idUsable,
                         prefab = prefabPath,
                         backLink,
-                        backLinkOk,
+                        backLinkOk
                     });
                 }
 
@@ -114,15 +111,15 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                     .ToList();
                 var zeroIdPaths = idToPaths.TryGetValue(0, out var zeros) ? zeros : new List<string>();
 
-                int problems = definitions.Count(d =>
+                var problems = definitions.Count(d =>
                 {
                     var t = d.GetType();
-                    bool idBad = !(bool)t.GetProperty("idUsable").GetValue(d);
+                    var idBad = !(bool)t.GetProperty("idUsable").GetValue(d);
                     var bl = (bool?)t.GetProperty("backLinkOk").GetValue(d);
                     return idBad || bl == false;
                 });
 
-                string msg = $"{definitions.Count} object definition(s).";
+                var msg = $"{definitions.Count} object definition(s).";
                 if (duplicateIds.Count > 0)
                     msg += $" {duplicateIds.Count} duplicate id(s).";
                 if (zeroIdPaths.Count > 0)
@@ -132,14 +129,24 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
 
                 return ToolEnvelope.Ok(
                     msg,
-                    result: new
+                    new
                     {
                         definitions,
                         duplicateIds,
-                        zeroIdPaths,
+                        zeroIdPaths
                     });
             }
-            catch (ToolException e) { return ToolEnvelope.FromException(e); }
+            catch (ToolException e)
+            {
+                return ToolEnvelope.FromException(e);
+            }
+        }
+
+        public class Parameters
+        {
+            [ToolParameter(
+                "Limit to definitions whose assetPath contains this substring (case-insensitive). Omit = every ObjectDefinition in the project.")]
+            public string Filter { get; set; }
         }
     }
 }

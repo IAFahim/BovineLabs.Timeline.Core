@@ -2,13 +2,6 @@ using Newtonsoft.Json.Linq;
 
 namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
 {
-    /// <summary>
-    /// Validating param reader over the raw JObject. Unlike the connector's lenient ToolParams
-    /// (GetInt/GetFloat silently return defaults; GetRequired is string-only / empty-as-missing),
-    /// every accessor here either returns a coercible value or throws a <see cref="ToolException"/>
-    /// that names the offending key — so the BAD_VALUE / MISSING_PREREQUISITE error model is
-    /// actually enforced, once, instead of re-derived in each handler.
-    /// </summary>
     internal sealed class Params
     {
         private readonly JObject p;
@@ -18,15 +11,25 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
             p = @params ?? new JObject();
         }
 
-        private JToken Tok(string key) => p.TryGetValue(key, out var t) ? t : null;
+        private JToken Tok(string key)
+        {
+            return p.TryGetValue(key, out var t) ? t : null;
+        }
 
-        private static bool IsNull(JToken t) => t == null || t.Type == JTokenType.Null;
+        private static bool IsNull(JToken t)
+        {
+            return t == null || t.Type == JTokenType.Null;
+        }
 
-        /// <summary>True when the key is present and not JSON null.</summary>
-        public bool Has(string key) => !IsNull(Tok(key));
+        public bool Has(string key)
+        {
+            return !IsNull(Tok(key));
+        }
 
-        /// <summary>True when the key is present but explicitly JSON null (distinct from omitted).</summary>
-        public bool IsExplicitNull(string key) => p.TryGetValue(key, out var t) && t.Type == JTokenType.Null;
+        public bool IsExplicitNull(string key)
+        {
+            return p.TryGetValue(key, out var t) && t.Type == JTokenType.Null;
+        }
 
         public string OptString(string key, string def = null)
         {
@@ -39,7 +42,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
 
         public string RequireString(string key)
         {
-            var v = OptString(key, null);
+            var v = OptString(key);
             if (string.IsNullOrEmpty(v))
                 throw new ToolException("MISSING_PREREQUISITE", $"Required param '{key}' is missing or empty.");
             return v;
@@ -49,8 +52,14 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
         {
             var t = Tok(key);
             if (IsNull(t)) return def;
-            try { return t.Value<float>(); }
-            catch { throw new ToolException("BAD_VALUE", $"Param '{key}' must be a number, got '{t}'."); }
+            try
+            {
+                return t.Value<float>();
+            }
+            catch
+            {
+                throw new ToolException("BAD_VALUE", $"Param '{key}' must be a number, got '{t}'.");
+            }
         }
 
         public int OptInt(string key, int def)
@@ -59,16 +68,28 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
             if (IsNull(t)) return def;
             if (t.Type == JTokenType.Float)
                 throw new ToolException("BAD_VALUE", $"Param '{key}' must be an integer, got '{t}'.");
-            try { return t.Value<int>(); }
-            catch { throw new ToolException("BAD_VALUE", $"Param '{key}' must be an integer, got '{t}'."); }
+            try
+            {
+                return t.Value<int>();
+            }
+            catch
+            {
+                throw new ToolException("BAD_VALUE", $"Param '{key}' must be an integer, got '{t}'.");
+            }
         }
 
         public bool OptBool(string key, bool def)
         {
             var t = Tok(key);
             if (IsNull(t)) return def;
-            try { return t.Value<bool>(); }
-            catch { throw new ToolException("BAD_VALUE", $"Param '{key}' must be a boolean, got '{t}'."); }
+            try
+            {
+                return t.Value<bool>();
+            }
+            catch
+            {
+                throw new ToolException("BAD_VALUE", $"Param '{key}' must be a boolean, got '{t}'.");
+            }
         }
 
         public JArray OptArray(string key)

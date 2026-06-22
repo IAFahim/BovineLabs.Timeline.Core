@@ -6,33 +6,17 @@ using Newtonsoft.Json.Linq;
 using UnityCliConnector;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace BovineLabs.Timeline.Core.Editor.CliTools
 {
     [UnityCliTool(
         Name = "ensure_component",
         Group = "vex",
-        Description = "Idempotent: ensure a SubScene object carries a component (added if missing) with given serialized fields. already-ok when present and fields already match; otherwise adds the component and/or sets the differing fields, recording an undo that removes-if-added or restores prior field values. dry_run reports without mutating. The shared 'fix if X missing' block.")]
+        Description =
+            "Idempotent: ensure a SubScene object carries a component (added if missing) with given serialized fields. already-ok when present and fields already match; otherwise adds the component and/or sets the differing fields, recording an undo that removes-if-added or restores prior field values. dry_run reports without mutating. The shared 'fix if X missing' block.")]
     public static class EnsureComponentTool
     {
-        public class Parameters
-        {
-            [ToolParameter("Subscene .unity path. Default: auto-detected.")]
-            public string Subscene { get; set; }
-
-            [ToolParameter("SubScene object hierarchy path.", Required = true)]
-            public string Object { get; set; }
-
-            [ToolParameter("Component type name, simple or full.", Required = true)]
-            public string Component { get; set; }
-
-            [ToolParameter("JSON object of fieldName -> value to ensure (dotted paths allowed, e.g. Initialize.Target).")]
-            public object Fields { get; set; }
-
-            [ToolParameter("Report-only: check satisfaction without mutating (default false).")]
-            public bool DryRun { get; set; }
-        }
-
         public static object HandleCommand(JObject @params)
         {
             var p = new Params(@params);
@@ -41,10 +25,10 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 var guard = AssetUtil.PlayModeBlocked();
                 if (guard != null) return guard;
 
-                string objPath = p.RequireString("object");
-                string compName = p.RequireString("component");
+                var objPath = p.RequireString("object");
+                var compName = p.RequireString("component");
                 var fields = p.OptObject("fields");
-                bool dryRun = p.OptBool("dry_run", false);
+                var dryRun = p.OptBool("dry_run", false);
 
                 var compType = SceneObjectUtil.ResolveComponentType(compName);
                 var target = new { @object = objPath, component = compType.Name };
@@ -54,12 +38,12 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                     if (session.Error != null) return session.Error;
 
                     var go = session.Find(objPath);
-                    if (go == null) return ToolEnvelope.Error("NOT_FOUND", $"No object '{objPath}' in {session.SubscenePath}.");
+                    if (go == null)
+                        return ToolEnvelope.Error("NOT_FOUND", $"No object '{objPath}' in {session.SubscenePath}.");
 
                     var comp = go.GetComponent(compType);
-                    bool present = comp != null;
+                    var present = comp != null;
 
-                    // Which requested fields differ from the current value (only meaningful when present).
                     var differing = new List<string>();
                     if (present && fields != null)
                         foreach (var kv in fields)
@@ -67,14 +51,15 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                                 differing.Add(kv.Key);
 
                     if (present && differing.Count == 0)
-                        return EnsureResult.Satisfied($"'{objPath}' already has {compType.Name}{(fields != null ? " with matching fields" : "")}.",
-                            target, before: new { present = true });
+                        return EnsureResult.Satisfied(
+                            $"'{objPath}' already has {compType.Name}{(fields != null ? " with matching fields" : "")}.",
+                            target, new { present = true });
 
                     if (dryRun)
                     {
-                        string what = !present ? "add component" : $"set {differing.Count} field(s)";
+                        var what = !present ? "add component" : $"set {differing.Count} field(s)";
                         return EnsureResult.WouldFixResult($"Would {what} on '{objPath}'.", target,
-                            before: new { present, differingFields = differing });
+                            new { present, differingFields = differing });
                     }
 
                     object[] undo;
@@ -89,20 +74,22 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                         }
                         catch
                         {
-                            // A bad field name/value must not leave the freshly added component orphaned on
-                            // the in-memory SubScene with no undo: remove it before the exception propagates.
-                            UnityEngine.Object.DestroyImmediate(comp);
+                            Object.DestroyImmediate(comp);
                             throw;
                         }
-                        // One-shot inverse: removing the component undoes the add AND any fields set on it.
+
                         undo = new object[]
                         {
-                            new { tool = "subscene_component_remove", @params = new { subscene = session.SubscenePath, @object = objPath, component = compType.Name } },
+                            new
+                            {
+                                tool = "subscene_component_remove",
+                                @params = new
+                                    { subscene = session.SubscenePath, @object = objPath, component = compType.Name }
+                            }
                         };
                     }
                     else
                     {
-                        // Capture prior values of just the fields we are about to change, for a precise restore.
                         var all = TimelineReflect.ReadSerializedFields(comp);
                         var prior = new JObject();
                         foreach (var f in differing)
@@ -110,32 +97,39 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                             prior[f] = all.SelectToken(f) ?? all[f];
                             TimelineReflect.SetSerializedField(comp, f, fields[f]);
                         }
+
                         undo = new object[]
                         {
-                            new { tool = "ensure_component", @params = new { subscene = session.SubscenePath, @object = objPath, component = compType.Name, fields = prior } },
+                            new
+                            {
+                                tool = "ensure_component",
+                                @params = new
+                                {
+                                    subscene = session.SubscenePath, @object = objPath, component = compType.Name,
+                                    fields = prior
+                                }
+                            }
                         };
                     }
 
                     EditorUtility.SetDirty(comp);
                     session.Save();
 
-                    string msg = !present
+                    var msg = !present
                         ? $"Added {compType.Name} to '{objPath}'."
                         : $"Set {differing.Count} field(s) on {compType.Name} of '{objPath}'.";
                     return EnsureResult.Applied(msg, target,
-                        before: new { present, differingFields = differing },
-                        after: new { present = true },
-                        undo: undo);
+                        new { present, differingFields = differing },
+                        new { present = true },
+                        undo);
                 }
             }
-            catch (ToolException e) { return ToolEnvelope.FromException(e); }
+            catch (ToolException e)
+            {
+                return ToolEnvelope.FromException(e);
+            }
         }
 
-        /// <summary>
-        /// Best-effort equality of a serialized field against a wanted JSON value, by serialized type.
-        /// Covers the scalar/enum/object-ref/vector cases the mechanics use; unknown types return false
-        /// (conservative — forces a set, never a false "already-ok").
-        /// </summary>
         private static bool FieldMatches(Component comp, string field, JToken wanted)
         {
             var so = new SerializedObject(comp);
@@ -152,34 +146,36 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 case SerializedPropertyType.Enum:
                     if (wanted.Type == JTokenType.String)
                     {
-                        // Resolve the enum Type by walking the (possibly nested, dotted) field path, then
-                        // Enum.Parse — handles nested struct enums (e.g. "Initialize.Target") AND [Flags]
-                        // comma-combined values, comparing the parsed int to the resolved prop.intValue.
                         var enumType = ResolveEnumType(comp.GetType(), field);
                         if (enumType != null)
-                        {
-                            // Broad catch: a bad name (ArgumentException) OR an exotic long/ulong enum value
-                            // overflowing int (OverflowException) must fall through to "not equal", never leak
-                            // a raw exception past the tool's structured-error contract.
-                            try { return prop.intValue == System.Convert.ToInt32(System.Enum.Parse(enumType, wanted.Value<string>(), true)); }
-                            catch (System.Exception) { return false; }
-                        }
+                            try
+                            {
+                                return prop.intValue ==
+                                       Convert.ToInt32(Enum.Parse(enumType, wanted.Value<string>(), true));
+                            }
+                            catch (Exception)
+                            {
+                                return false;
+                            }
 
-                        // Fallback when the type can't be reflected: match a single member name by index.
                         var names = prop.enumNames;
                         var wantedName = wanted.Value<string>();
-                        for (int i = 0; i < names.Length; i++)
+                        for (var i = 0; i < names.Length; i++)
                             if (string.Equals(names[i], wantedName, StringComparison.OrdinalIgnoreCase))
                                 return prop.enumValueIndex == i;
                         return false;
                     }
+
                     return prop.intValue == wanted.Value<int>();
                 case SerializedPropertyType.ObjectReference:
                 {
-                    string path = wanted.Type == JTokenType.String ? wanted.Value<string>()
-                        : wanted is JObject o && o["guid"] != null ? AssetDatabase.GUIDToAssetPath(o["guid"].Value<string>())
-                        : wanted is JObject ro && ro["assetPath"] != null ? ro["assetPath"].Value<string>()
-                        : null;
+                    var path = wanted.Type == JTokenType.String
+                        ? wanted.Value<string>()
+                        : wanted is JObject o && o["guid"] != null
+                            ? AssetDatabase.GUIDToAssetPath(o["guid"].Value<string>())
+                            : wanted is JObject ro && ro["assetPath"] != null
+                                ? ro["assetPath"].Value<string>()
+                                : null;
                     var cur = prop.objectReferenceValue;
                     if (string.IsNullOrEmpty(path)) return cur == null;
                     return cur != null && AssetDatabase.GetAssetPath(cur) == path;
@@ -189,12 +185,10 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
             }
         }
 
-        // Walk a (possibly nested, dotted) serialized field path and return the leaf field's enum Type,
-        // or null if any segment is missing or the leaf is not an enum.
-        private static System.Type ResolveEnumType(System.Type root, string dottedPath)
+        private static Type ResolveEnumType(Type root, string dottedPath)
         {
             var t = root;
-            System.Reflection.FieldInfo fi = null;
+            FieldInfo fi = null;
             foreach (var part in dottedPath.Split('.'))
             {
                 fi = t.GetField(part, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
@@ -203,6 +197,25 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
             }
 
             return fi != null && fi.FieldType.IsEnum ? fi.FieldType : null;
+        }
+
+        public class Parameters
+        {
+            [ToolParameter("Subscene .unity path. Default: auto-detected.")]
+            public string Subscene { get; set; }
+
+            [ToolParameter("SubScene object hierarchy path.", Required = true)]
+            public string Object { get; set; }
+
+            [ToolParameter("Component type name, simple or full.", Required = true)]
+            public string Component { get; set; }
+
+            [ToolParameter(
+                "JSON object of fieldName -> value to ensure (dotted paths allowed, e.g. Initialize.Target).")]
+            public object Fields { get; set; }
+
+            [ToolParameter("Report-only: check satisfaction without mutating (default false).")]
+            public bool DryRun { get; set; }
         }
     }
 }
