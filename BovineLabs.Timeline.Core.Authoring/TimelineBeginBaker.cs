@@ -1,6 +1,6 @@
+using BovineLabs.Timeline.Core.Data.Builders;
 using BovineLabs.Timeline.Data;
 using Unity.Entities;
-using Unity.IntegerTime;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
@@ -14,17 +14,17 @@ namespace BovineLabs.Timeline.Core.Authoring
 
             var authoring = GetComponent<TimelineBeginAuthoring>();
 
-            var onLoad = authoring != null
-                ? authoring.Mode == TimelineBeginMode.OnLoad
-                : director.playOnAwake;
-
-            var remaining = authoring != null
-                ? new DiscreteTime(authoring.DelaySeconds)
-                : DiscreteTime.Zero;
+            var resolve = new TimelineBeginResolve
+            {
+                HasAuthoring = authoring != null,
+                AuthoringOnLoad = authoring != null && authoring.Mode == TimelineBeginMode.OnLoad,
+                AuthoringDelaySeconds = authoring != null ? authoring.DelaySeconds : 0f,
+                DirectorPlayOnAwake = director.playOnAwake,
+            };
 
             var entity = GetEntity(TransformUsageFlags.None);
-            AddComponent(entity, new TimelinePlayRequest { Remaining = remaining });
-            SetComponentEnabled<TimelinePlayRequest>(entity, onLoad);
+            AddComponent(entity, new TimelinePlayRequest { Remaining = resolve.Remaining });
+            SetComponentEnabled<TimelinePlayRequest>(entity, resolve.Enabled);
         }
     }
 }

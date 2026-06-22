@@ -173,22 +173,7 @@ namespace BovineLabs.Timeline.Core.Debug
 
         private static bool EyeFromPlanes(in CameraCulling cam, out float3 eye)
         {
-            var n1 = cam.Left.xyz;
-            var d1 = cam.Left.w;
-            var n2 = cam.Right.xyz;
-            var d2 = cam.Right.w;
-            var n3 = cam.Top.xyz;
-            var d3 = cam.Top.w;
-            var c23 = math.cross(n2, n3);
-            var denom = math.dot(n1, c23);
-            if (math.abs(denom) < 1e-6f)
-            {
-                eye = default;
-                return false;
-            }
-
-            eye = (-d1 * c23 - d2 * math.cross(n3, n1) - d3 * math.cross(n1, n2)) / denom;
-            return true;
+            return PlaneIntersect.TryThreePlaneIntersect(cam.Left, cam.Right, cam.Top, out eye);
         }
 
         private static float3 SafeRight(float3 normal)

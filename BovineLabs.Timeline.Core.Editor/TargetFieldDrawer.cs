@@ -11,6 +11,8 @@ namespace BovineLabs.Timeline.Core.Editor
     {
         private const float ButtonWidth = 24f;
 
+        private static readonly Target[] Roles = (Target[])Enum.GetValues(typeof(Target));
+
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(position, label, property);
@@ -30,9 +32,8 @@ namespace BovineLabs.Timeline.Core.Editor
 
         private static Target Current(SerializedProperty property)
         {
-            var values = (Target[])Enum.GetValues(typeof(Target));
             var idx = property.enumValueIndex;
-            return idx >= 0 && idx < values.Length ? values[idx] : Target.None;
+            return idx >= 0 && idx < Roles.Length ? Roles[idx] : Target.None;
         }
 
         private static GameObject ResolveGameObject(SerializedProperty property, out Target role)

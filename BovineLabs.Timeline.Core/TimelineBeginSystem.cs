@@ -38,11 +38,10 @@ namespace BovineLabs.Timeline.Schedular
                 EnabledRefRW<TimelineActive> active,
                 EnabledRefRW<TimerPaused> paused)
             {
-                if (request.Remaining > DiscreteTime.Zero)
+                if (!TimelineBegin.TryAdvance(request.Remaining, Elapsed(clock), out var remaining))
                 {
-                    request.Remaining -= Elapsed(clock);
-
-                    if (request.Remaining > DiscreteTime.Zero) return;
+                    request.Remaining = remaining;
+                    return;
                 }
 
                 active.ValueRW = true;

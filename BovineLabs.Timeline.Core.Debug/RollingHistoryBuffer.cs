@@ -8,8 +8,12 @@ namespace BovineLabs.Timeline.Core.Debug
         public static void Cull<T>(this DynamicBuffer<T> buffer, double currentTime, double retentionWindow)
             where T : unmanaged, IBufferElementData, ITimestampedRecord
         {
-            while (buffer.Length > 0 && currentTime - buffer[0].Timestamp > retentionWindow)
-                buffer.RemoveAt(0);
+            var expired = 0;
+            while (expired < buffer.Length && currentTime - buffer[expired].Timestamp > retentionWindow)
+                expired++;
+
+            if (expired > 0)
+                buffer.RemoveRange(0, expired);
         }
     }
 
