@@ -81,9 +81,19 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                     if (!present)
                     {
                         comp = go.AddComponent(compType);
-                        if (fields != null)
-                            foreach (var kv in fields)
-                                TimelineReflect.SetSerializedField(comp, kv.Key, kv.Value);
+                        try
+                        {
+                            if (fields != null)
+                                foreach (var kv in fields)
+                                    TimelineReflect.SetSerializedField(comp, kv.Key, kv.Value);
+                        }
+                        catch
+                        {
+                            // A bad field name/value must not leave the freshly added component orphaned on
+                            // the in-memory SubScene with no undo: remove it before the exception propagates.
+                            UnityEngine.Object.DestroyImmediate(comp);
+                            throw;
+                        }
                         // One-shot inverse: removing the component undoes the add AND any fields set on it.
                         undo = new object[]
                         {

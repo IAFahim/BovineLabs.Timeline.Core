@@ -14,7 +14,6 @@ namespace BovineLabs.Timeline.Core.Authoring
 
             var em = world.EntityManager;
             using var query = new EntityQueryBuilder(Allocator.Temp)
-                .WithAll<TimelinePlayRequest>()
                 .WithDisabled<TimelinePlayRequest>()
                 .Build(em);
 

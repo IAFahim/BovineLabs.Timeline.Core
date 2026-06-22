@@ -89,17 +89,29 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
         {
             path = null;
             id = 0;
-            var guids = AssetDatabase.FindAssets($"t:{typeName} {name}");
-            foreach (var guid in guids)
+
+            // Collect ALL exact-name matches so a same-name/different-key duplicate (e.g. two
+            // StaggerMeter schemas) is surfaced rather than resolved by FindAssets' unspecified GUID order.
+            var matches = new List<(string path, Object asset)>();
+            foreach (var guid in AssetDatabase.FindAssets($"t:{typeName} {name}"))
             {
                 var ap = AssetDatabase.GUIDToAssetPath(guid);
                 var asset = AssetDatabase.LoadMainAssetAtPath(ap);
                 if (asset == null || asset.name != name) continue;
-                path = ap;
-                id = new SerializedObject(asset).FindProperty("id")?.intValue ?? 0;
-                return asset;
+                matches.Add((ap, asset));
             }
-            return null;
+
+            if (matches.Count == 0) return null;
+            // Sort by path for a stable order independent of GUID enumeration.
+            matches.Sort((a, b) => string.CompareOrdinal(a.path, b.path));
+            if (matches.Count > 1)
+                throw new ToolException("AMBIGUOUS",
+                    $"Schema '{name}' ({typeName}) matches {matches.Count} assets — pass a more specific name or remove the duplicate.",
+                    matches.Select(m => m.path).ToArray());
+
+            path = matches[0].path;
+            id = new SerializedObject(matches[0].asset).FindProperty("id")?.intValue ?? 0;
+            return matches[0].asset;
         }
 
         private static string ResolveCreatePath(string pathOrFolder, string name)

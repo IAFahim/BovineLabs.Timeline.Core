@@ -31,7 +31,10 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
         public string OptString(string key, string def = null)
         {
             var t = Tok(key);
-            return IsNull(t) ? def : t.ToString();
+            if (IsNull(t)) return def;
+            if (t.Type == JTokenType.Object || t.Type == JTokenType.Array)
+                throw new ToolException("BAD_VALUE", $"Param '{key}' must be a string, got a JSON {t.Type}.");
+            return t.Type == JTokenType.String ? t.Value<string>() : t.ToString();
         }
 
         public string RequireString(string key)
@@ -54,6 +57,8 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
         {
             var t = Tok(key);
             if (IsNull(t)) return def;
+            if (t.Type == JTokenType.Float)
+                throw new ToolException("BAD_VALUE", $"Param '{key}' must be an integer, got '{t}'.");
             try { return t.Value<int>(); }
             catch { throw new ToolException("BAD_VALUE", $"Param '{key}' must be an integer, got '{t}'."); }
         }

@@ -35,6 +35,21 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
             var s = new SubSceneSession();
             try { s.OpenInternal(subscenePathOrNull); }
             catch (ToolException e) { s.Error = ToolEnvelope.FromException(e); }
+            catch (Exception ex)
+            {
+                // OpenScene/SetActiveScene can throw non-ToolException (corrupt/locked scene asset).
+                // If we already opened the subscene additively, close it so we never leak it.
+                if (s.openedByUs && s.Subscene.IsValid() && s.Subscene.isLoaded)
+                    EditorSceneManager.CloseScene(s.Subscene, true);
+                if (!string.IsNullOrEmpty(s.ParentPath))
+                {
+                    var current = EditorSceneManager.GetActiveScene();
+                    if (current.path != s.ParentPath)
+                        EditorSceneManager.OpenScene(s.ParentPath, OpenSceneMode.Single);
+                }
+                s.openedByUs = false;
+                s.Error = ToolEnvelope.Error("BAD_VALUE", ex.Message);
+            }
             return s;
         }
 
@@ -106,6 +121,12 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
         {
             if (Subscene.IsValid())
                 EditorSceneManager.SaveScene(Subscene);
+
+            // A scene save does not re-convert the live world for ASSET edits (e.g. a clip's serialized fields):
+            // the live-conversion change tracker only watches objects inside the open authoring scene, so an
+            // AssetDatabase.SaveAssets() on a referenced .playable/clip never marks the baker's DependsOn dirty.
+            // Force the open SubScene(s) to re-convert so the live ECS world reflects the edit. See RebakeUtil.
+            RebakeUtil.ReimportOpenSubScenes();
         }
 
         public void Dispose()

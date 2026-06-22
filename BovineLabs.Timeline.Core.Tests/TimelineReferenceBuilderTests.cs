@@ -1,7 +1,7 @@
+using BovineLabs.Core.EntityCommands;
 using BovineLabs.Testing;
 using BovineLabs.Timeline.Core.Data.Builders;
 using NUnit.Framework;
-using Unity.Collections;
 using Unity.Entities;
 
 namespace BovineLabs.Timeline.Core.Tests
@@ -14,9 +14,8 @@ namespace BovineLabs.Timeline.Core.Tests
             var entity = Manager.CreateEntity();
             var builder = new TimelineReferenceBuilder();
 
-            var ecb = new EntityCommandBuffer(Allocator.Temp);
-            ecb.AddComponent<TimelineReference>(entity);
-            ecb.Playback(Manager);
+            var commands = new EntityManagerCommands(Manager, entity);
+            builder.ApplyTo(ref commands);
 
             Assert.IsTrue(Manager.HasComponent<TimelineReference>(entity));
         }
@@ -28,11 +27,12 @@ namespace BovineLabs.Timeline.Core.Tests
             Manager.AddComponent<TimelineReference>(entity);
 
             Assert.IsTrue(Manager.HasComponent<TimelineReference>(entity));
+
+            var builder = new TimelineReferenceBuilder();
             Assert.DoesNotThrow(() =>
             {
-                var ecb = new EntityCommandBuffer(Allocator.Temp);
-                ecb.AddComponent<TimelineReference>(entity);
-                ecb.Playback(Manager);
+                var commands = new EntityManagerCommands(Manager, entity);
+                builder.ApplyTo(ref commands);
             });
         }
 
@@ -43,11 +43,14 @@ namespace BovineLabs.Timeline.Core.Tests
             var e2 = Manager.CreateEntity();
             var e3 = Manager.CreateEntity();
 
-            var ecb = new EntityCommandBuffer(Allocator.Temp);
-            ecb.AddComponent<TimelineReference>(e1);
-            ecb.AddComponent<TimelineReference>(e2);
-            ecb.AddComponent<TimelineReference>(e3);
-            ecb.Playback(Manager);
+            var builder = new TimelineReferenceBuilder();
+
+            var c1 = new EntityManagerCommands(Manager, e1);
+            var c2 = new EntityManagerCommands(Manager, e2);
+            var c3 = new EntityManagerCommands(Manager, e3);
+            builder.ApplyTo(ref c1);
+            builder.ApplyTo(ref c2);
+            builder.ApplyTo(ref c3);
 
             Assert.IsTrue(Manager.HasComponent<TimelineReference>(e1));
             Assert.IsTrue(Manager.HasComponent<TimelineReference>(e2));
@@ -65,10 +68,10 @@ namespace BovineLabs.Timeline.Core.Tests
         public void ApplyTo_ComponentIsZeroSizedTag()
         {
             var entity = Manager.CreateEntity();
+            var builder = new TimelineReferenceBuilder();
 
-            var ecb = new EntityCommandBuffer(Allocator.Temp);
-            ecb.AddComponent<TimelineReference>(entity);
-            ecb.Playback(Manager);
+            var commands = new EntityManagerCommands(Manager, entity);
+            builder.ApplyTo(ref commands);
 
             Assert.IsTrue(Manager.HasComponent<TimelineReference>(entity));
         }

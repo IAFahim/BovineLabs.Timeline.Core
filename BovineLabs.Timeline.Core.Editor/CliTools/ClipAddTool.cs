@@ -77,6 +77,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 EditorUtility.SetDirty(track);
                 if (clip.asset != null) EditorUtility.SetDirty(clip.asset);
                 AssetDatabase.SaveAssets();
+                RebakeUtil.ReimportOpenSubScenes(); // SaveAssets alone won't re-bake an open SubScene (see RebakeUtil).
 
                 var undo = new object[]
                 {

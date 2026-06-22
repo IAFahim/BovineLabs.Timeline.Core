@@ -91,29 +91,63 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools.Shared
 
         // ---- track / clip locators ---------------------------------------------------------------
 
-        /// <summary>Locate an output track by name or index. Null if not found.</summary>
+        /// <summary>
+        /// Locate an output track by name or index. Null if not found. An exact-name pass runs first
+        /// and only falls back to index selection when no track NAME matches — so a track literally
+        /// named "1" can never shadow the index-1 selector.
+        /// </summary>
         public static TrackAsset FindTrack(TimelineAsset timeline, string sel)
         {
             if (timeline == null || string.IsNullOrEmpty(sel)) return null;
-            bool isNum = int.TryParse(sel, out var n);
+
+            var tracks = timeline.GetOutputTracks();
+
+            // Name pass first (exact match wins regardless of any numeric track name).
+            foreach (var t in tracks)
+                if (t.name == sel) return t;
+
+            // Index fallback only when nothing matched by name.
+            return int.TryParse(sel, out var n) ? AtIndex(tracks, n) : null;
+        }
+
+        private static TrackAsset AtIndex(IEnumerable<TrackAsset> tracks, int n)
+        {
+            if (n < 0) return null;
             int idx = 0;
-            foreach (var t in timeline.GetOutputTracks())
+            foreach (var t in tracks)
             {
-                if (t.name == sel || (isNum && idx == n)) return t;
+                if (idx == n) return t;
                 idx++;
             }
             return null;
         }
 
-        /// <summary>Locate a clip on a track by display name or index. Null if not found.</summary>
+        /// <summary>
+        /// Locate a clip on a track by display name or index. Null if not found. An exact-displayName
+        /// pass runs first and only falls back to index selection when no clip NAME matches — so a clip
+        /// literally named "0" can never shadow the index-0 selector.
+        /// </summary>
         public static TimelineClip FindClip(TrackAsset track, string sel)
         {
             if (track == null || string.IsNullOrEmpty(sel)) return null;
-            bool isNum = int.TryParse(sel, out var n);
+
+            var clips = track.GetClips();
+
+            // Name pass first (exact match wins regardless of any numeric clip displayName).
+            foreach (var c in clips)
+                if (c.displayName == sel) return c;
+
+            // Index fallback only when nothing matched by displayName.
+            return int.TryParse(sel, out var n) ? AtIndex(clips, n) : null;
+        }
+
+        private static TimelineClip AtIndex(IEnumerable<TimelineClip> clips, int n)
+        {
+            if (n < 0) return null;
             int idx = 0;
-            foreach (var c in track.GetClips())
+            foreach (var c in clips)
             {
-                if (c.displayName == sel || (isNum && idx == n)) return c;
+                if (idx == n) return c;
                 idx++;
             }
             return null;

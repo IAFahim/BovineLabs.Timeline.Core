@@ -57,6 +57,13 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 var eul = SceneObjectUtil.ReadVector3(@params, "euler");
                 var scl = SceneObjectUtil.ReadVector3(@params, "scale");
 
+                // Reject non-finite components before any write. NaN/Infinity would be written verbatim
+                // (ReadVector3 does not validate) and then poison the verify block (every comparison
+                // against NaN is false, so 'ok' stays true), saving a corrupt transform as a false success.
+                RequireFinite(pos, "position");
+                RequireFinite(eul, "euler");
+                RequireFinite(scl, "scale");
+
                 if (useSubscene)
                 {
                     using (var session = SubSceneSession.Open(subscene))
@@ -76,6 +83,14 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 }
             }
             catch (ToolException e) { return ToolEnvelope.FromException(e); }
+        }
+
+        private static void RequireFinite(Vector3? v, string field)
+        {
+            if (!v.HasValue) return;
+            var c = v.Value;
+            if (!float.IsFinite(c.x) || !float.IsFinite(c.y) || !float.IsFinite(c.z))
+                throw new ToolException("BAD_VALUE", $"'{field}' components must be finite (no NaN/Infinity).");
         }
 
         internal sealed class ApplyResult

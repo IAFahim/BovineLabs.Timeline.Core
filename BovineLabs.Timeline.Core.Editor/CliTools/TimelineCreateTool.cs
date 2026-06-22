@@ -93,6 +93,7 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 EditorUtility.SetDirty(timeline);
                 EditorUtility.SetDirty(track);
                 AssetDatabase.SaveAssets();
+                RebakeUtil.ReimportOpenSubScenes(); // SaveAssets alone won't re-bake an open SubScene (see RebakeUtil).
 
                 if (replacing)
                 {

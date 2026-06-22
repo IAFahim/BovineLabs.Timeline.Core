@@ -123,6 +123,19 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 targetPos = targetGo.transform.position;
             }
 
+            // Reject non-finite 'point'/'up' up front: a NaN/Inf direction or up would otherwise reach
+            // LookRotation and persist a NaN quaternion (NaN comparisons make the per-object guards pass).
+            if (!IsFinite(targetPos))
+            {
+                r.error = ToolEnvelope.Error("BAD_VALUE", "target position ('point' or target object) must be finite (no NaN/Infinity).");
+                return r;
+            }
+            if (!IsFinite(up))
+            {
+                r.error = ToolEnvelope.Error("BAD_VALUE", "'up' must be finite (no NaN/Infinity).");
+                return r;
+            }
+
             foreach (var path in paths)
             {
                 var go = resolve(path);
@@ -135,9 +148,24 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 var dir = targetPos - t.position;
                 if (flattenY) dir.y = 0f;
 
-                bool degenerate = dir.sqrMagnitude < 1e-8f;
-                if (!degenerate)
-                    t.rotation = Quaternion.LookRotation(dir.normalized, up);
+                // targetPos and up are finite (guarded above), so a non-finite dir means t.position is
+                // non-finite; the `>= 1e-8f` form rejects that NaN too (a plain `< 1e-8f` would pass it).
+                float dirSq = dir.sqrMagnitude;
+                bool degenerate = !(dirSq >= 1e-8f) || float.IsInfinity(dirSq);
+                // Reject an 'up' colinear with the look direction: LookRotation is undefined there and
+                // Unity collapses to an identity-ish rotation that does NOT face the target.
+                if (!degenerate && Vector3.Cross(dir.normalized, up).sqrMagnitude < 1e-6f)
+                    degenerate = true;
+
+                if (degenerate)
+                {
+                    // Do not overwrite (and later Save) a good rotation with a NaN/identity value.
+                    r.notFound.Add(path);
+                    r.allVerified = false;
+                    continue;
+                }
+
+                t.rotation = Quaternion.LookRotation(dir.normalized, up);
 
                 r.applied.Add(path);
 
@@ -170,6 +198,13 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                 r.verifyChecks.Add(new { name = $"facing:{path}", pass, detail });
             }
             return r;
+        }
+
+        private static bool IsFinite(Vector3 v)
+        {
+            return !float.IsNaN(v.x) && !float.IsInfinity(v.x)
+                && !float.IsNaN(v.y) && !float.IsInfinity(v.y)
+                && !float.IsNaN(v.z) && !float.IsInfinity(v.z);
         }
 
         private static object Envelope(OrientResult r, string subscenePath)

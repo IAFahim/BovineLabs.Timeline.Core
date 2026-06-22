@@ -112,6 +112,18 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
                             go = (GameObject)PrefabUtility.InstantiatePrefab(prefabAsset);
                         else
                             go = GameObject.CreatePrimitive(primType);
+
+                        if (go == null)
+                        {
+                            // Abort cleanly: destroy what we already spawned this call (and the new
+                            // container if we created it) so the live subscene is not left with partial garbage.
+                            foreach (var created in createdGos)
+                                UnityEngine.Object.DestroyImmediate(created);
+                            if (!containerExisted)
+                                UnityEngine.Object.DestroyImmediate(container.gameObject);
+                            return ToolEnvelope.Error("BAD_VALUE", $"Could not instantiate prefab '{prefab}'.");
+                        }
+
                         go.name = $"{baseName}_{i}";
 
                         EditorSceneManager.MoveGameObjectToScene(go, session.Subscene);

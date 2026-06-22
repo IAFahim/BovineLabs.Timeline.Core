@@ -263,7 +263,7 @@ namespace BovineLabs.Timeline.Core.Debug
         {
             if (max <= min) return 0f;
             var range = max - min;
-            var offset = value - min;
+            var offset = math.max(0f, value - min);
             return math.saturate(math.log(1f + offset) / math.log(1f + range));
         }
 

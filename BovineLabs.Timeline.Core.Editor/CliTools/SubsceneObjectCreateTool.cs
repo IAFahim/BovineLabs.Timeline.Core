@@ -103,7 +103,11 @@ namespace BovineLabs.Timeline.Core.Editor.CliTools
 
                         GameObject go;
                         if (prefabAsset != null)
+                        {
                             go = (GameObject)PrefabUtility.InstantiatePrefab(prefabAsset);
+                            if (go == null)
+                                return ToolEnvelope.Error("BAD_VALUE", $"Could not instantiate prefab '{prefab}'.");
+                        }
                         else
                             go = GameObject.CreatePrimitive(primType);
                         go.name = goName;
