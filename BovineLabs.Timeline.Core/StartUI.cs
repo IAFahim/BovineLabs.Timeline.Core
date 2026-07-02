@@ -26,7 +26,7 @@ namespace BovineLabs.Timeline.Core
                 var entities = query.ToEntityArray(Allocator.Temp);
                 var count = entities.Length;
                 for (var i = 0; i < count; i++)
-                    em.SetComponentEnabled<TimelineActive>(entities[i], true);
+                    em.SetComponentEnabled<TimelinePlayRequest>(entities[i], true);
                 entities.Dispose();
 
                 if (count > 0) enabled = false;
@@ -54,7 +54,7 @@ namespace BovineLabs.Timeline.Core
             timelineQueryWorld = world;
             timelineQuery = new EntityQueryBuilder(Allocator.Temp)
                 .WithAll<TimelineReference>()
-                .WithDisabled<TimelineActive>()
+                .WithDisabled<TimelinePlayRequest>()
                 .Build(world.EntityManager);
 
             query = timelineQuery;

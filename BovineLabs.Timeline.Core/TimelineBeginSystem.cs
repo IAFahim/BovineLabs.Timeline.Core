@@ -44,6 +44,7 @@ namespace BovineLabs.Timeline.Schedular
                     return;
                 }
 
+                request.Remaining = request.Delay;
                 active.ValueRW = true;
                 paused.ValueRW = false;
                 requested.ValueRW = false;

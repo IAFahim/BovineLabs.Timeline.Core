@@ -23,7 +23,7 @@ namespace BovineLabs.Timeline.Core.Authoring
             };
 
             var entity = GetEntity(TransformUsageFlags.None);
-            AddComponent(entity, new TimelinePlayRequest { Remaining = resolve.Remaining });
+            AddComponent(entity, new TimelinePlayRequest { Remaining = resolve.Remaining, Delay = resolve.Remaining });
             SetComponentEnabled<TimelinePlayRequest>(entity, resolve.Enabled);
         }
     }
