@@ -20,8 +20,8 @@ namespace BovineLabs.Timeline.Core.Editor
         private bool showPackages = true;
         private bool showAssets;
 
-        // Embedded inspectors for expanded sub-assets — built lazily, cached, disposed in OnDisable.
-        private readonly Dictionary<UnityEngine.Object, UnityEditor.Editor> embedded = new();
+        // Cached SerializedObjects for the expanded sub-assets' link fields.
+        private readonly Dictionary<UnityEngine.Object, SerializedObject> serialized = new();
         private readonly HashSet<UnityEngine.Object> expanded = new();
 
         private void OnEnable()
@@ -41,15 +41,7 @@ namespace BovineLabs.Timeline.Core.Editor
                 DestroyImmediate(defaultEditor);
             }
 
-            foreach (var ed in embedded.Values)
-            {
-                if (ed != null)
-                {
-                    DestroyImmediate(ed);
-                }
-            }
-
-            embedded.Clear();
+            serialized.Clear();
         }
 
         public override void OnInspectorGUI()
@@ -179,7 +171,7 @@ namespace BovineLabs.Timeline.Core.Editor
                     expanded.Add(o);
                     using (new EditorGUI.IndentLevelScope())
                     {
-                        GetEmbedded(o).OnInspectorGUI();
+                        DrawLinks(o);
                     }
                 }
                 else
@@ -189,15 +181,49 @@ namespace BovineLabs.Timeline.Core.Editor
             }
         }
 
-        private UnityEditor.Editor GetEmbedded(UnityEngine.Object o)
+        // Just the ScriptableObject-reference fields ("placement links") of the sub-asset — editable, so a designer
+        // can swap a schema/link/action fast without the whole clip inspector. Uses the custom drawers.
+        private void DrawLinks(UnityEngine.Object o)
         {
-            if (!embedded.TryGetValue(o, out var ed) || ed == null)
+            var so = GetSerialized(o);
+            so.Update();
+
+            var any = false;
+            var it = so.GetIterator();
+            while (it.NextVisible(true))
             {
-                ed = CreateEditor(o);
-                embedded[o] = ed;
+                if (it.propertyType != SerializedPropertyType.ObjectReference || it.name == "m_Script")
+                {
+                    continue;
+                }
+
+                // Only asset links (ScriptableObjects). Skip scene-object references and unset non-SO fields.
+                if (it.objectReferenceValue is not ScriptableObject)
+                {
+                    continue;
+                }
+
+                EditorGUILayout.PropertyField(it, true);
+                any = true;
             }
 
-            return ed;
+            if (!any)
+            {
+                EditorGUILayout.LabelField("  (no scriptable-object links)");
+            }
+
+            so.ApplyModifiedProperties();
+        }
+
+        private SerializedObject GetSerialized(UnityEngine.Object o)
+        {
+            if (!serialized.TryGetValue(o, out var so) || so == null || so.targetObject == null)
+            {
+                so = new SerializedObject(o);
+                serialized[o] = so;
+            }
+
+            return so;
         }
 
         private struct PackageUse
