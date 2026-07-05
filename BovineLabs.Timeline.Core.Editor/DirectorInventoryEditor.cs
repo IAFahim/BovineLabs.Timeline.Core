@@ -71,7 +71,17 @@ namespace BovineLabs.Timeline.Core.Editor
             }
 
             var subAssets = CollectSubAssets(timeline);
+            var wasOpen = showAssets;
             showAssets = EditorGUILayout.Foldout(showAssets, $"ScriptableObjects in timeline ({subAssets.Count})", true);
+            if (showAssets && !wasOpen)
+            {
+                // Opening the section gives the full picture: expand every track/clip's links at once.
+                foreach (var o in subAssets)
+                {
+                    expanded.Add(o);
+                }
+            }
+
             if (showAssets)
             {
                 DrawAssets(subAssets);
