@@ -23,7 +23,7 @@ namespace BovineLabs.Timeline.Core.Tests
         {
             Assert.DoesNotThrow(() =>
             {
-                var _ = new TimelineReference();
+                _ = new TimelineReference();
             });
         }
     }
