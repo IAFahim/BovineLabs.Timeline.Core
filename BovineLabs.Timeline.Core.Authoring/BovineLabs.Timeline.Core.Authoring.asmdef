@@ -1,27 +1,28 @@
 {
-  "name": "BovineLabs.Timeline.Core.Authoring",
-  "rootNamespace": "",
-  "references": [
-    "BovineLabs.Core",
-    "BovineLabs.Core.Authoring",
-    "BovineLabs.Timeline.Authoring",
-    "BovineLabs.Timeline.Core",
-    "BovineLabs.Timeline.Core.Data",
-    "Unity.Burst",
-    "Unity.Collections",
-    "Unity.Entities",
-    "Unity.Entities.Hybrid",
-    "Unity.Mathematics",
-    "Unity.Timeline"
-  ],
-  "includePlatforms": [],
-  "excludePlatforms": [],
-  "allowUnsafeCode": true,
-  "overrideReferences": false,
-  "autoReferenced": false,
-  "defineConstraints": [
-    "UNITY_EDITOR"
-  ],
-  "versionDefines": [],
-  "noEngineReferences": false
+    "name": "BovineLabs.Timeline.Core.Authoring",
+    "rootNamespace": "",
+    "references": [
+        "BovineLabs.Core",
+        "BovineLabs.Core.Authoring",
+        "BovineLabs.Timeline.Authoring",
+        "BovineLabs.Timeline.Core",
+        "BovineLabs.Timeline.Core.Data",
+        "Unity.Burst",
+        "Unity.Collections",
+        "Unity.Entities",
+        "Unity.Entities.Hybrid",
+        "Unity.Mathematics",
+        "Unity.Timeline",
+        "BovineLabs.Nerve"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_EDITOR"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

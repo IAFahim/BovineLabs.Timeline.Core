@@ -1,24 +1,28 @@
 {
-  "name": "BovineLabs.Timeline.Core.Editor",
-  "rootNamespace": "",
-  "references": [
-    "UnityCliConnector.Editor",
-    "BovineLabs.Timeline.Core.Authoring",
-    "BovineLabs.Core.Extensions.Authoring",
-    "BovineLabs.Reaction.Data",
-    "BovineLabs.Reaction.Authoring",
-    "Unity.Timeline",
-    "Unity.Timeline.Editor"
-  ],
-  "includePlatforms": [
-    "Editor"
-  ],
-  "excludePlatforms": [],
-  "allowUnsafeCode": false,
-  "overrideReferences": false,
-  "precompiledReferences": [],
-  "autoReferenced": false,
-  "defineConstraints": [],
-  "versionDefines": [],
-  "noEngineReferences": false
+    "name": "BovineLabs.Timeline.Core.Editor",
+    "rootNamespace": "",
+    "references": [
+        "UnityCliConnector.Editor",
+        "BovineLabs.Timeline.Core.Authoring",
+        "BovineLabs.Core.Extensions.Authoring",
+        "BovineLabs.Reaction.Data",
+        "BovineLabs.Reaction.Authoring",
+        "Unity.Timeline",
+        "Unity.Timeline.Editor",
+        "BovineLabs.Nerve.Authoring",
+        "BovineLabs.Nerve",
+        "BovineLabs.Core",
+        "BovineLabs.Core.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

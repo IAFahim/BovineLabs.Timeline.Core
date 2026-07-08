@@ -4,6 +4,7 @@
 
 namespace BovineLabs.Timeline.Core
 {
+    using BovineLabs.Nerve;
     using BovineLabs.Core;
 
     /// <summary>
